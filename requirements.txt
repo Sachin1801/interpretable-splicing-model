@@ -3,6 +3,7 @@
 
 # Core ML dependencies
 tensorflow>=2.15.0
+tf_keras  # Keras 2.x compatibility layer (required for loading pre-trained model)
 numpy>=1.26.0
 pandas>=2.1.0
 joblib>=1.3.0
@@ -22,5 +23,6 @@ ipykernel
 drawsvg
 
 # Note: ViennaRNA must be installed separately via:
-#   macOS: brew install viennarna
+#   macOS: brew tap brewsci/bio && brew install brewsci/bio/viennarna
 #   Ubuntu: sudo apt install vienna-rna
+# Verify: RNAfold --version
