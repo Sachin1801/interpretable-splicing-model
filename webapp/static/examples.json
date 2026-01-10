@@ -1,0 +1,22 @@
+{
+  "sequences": [
+    {
+      "name": "High Inclusion Example",
+      "sequence": "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT",
+      "description": "This sequence demonstrates strong exon inclusion (actual PSI = 0.982)",
+      "expected_psi": 0.9820359281437125
+    },
+    {
+      "name": "Balanced Example",
+      "sequence": "CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC",
+      "description": "This sequence shows balanced inclusion/skipping (actual PSI = 0.487)",
+      "expected_psi": 0.48717948717948717
+    },
+    {
+      "name": "High Skipping Example",
+      "sequence": "ACACTCCGCAGCACACTCGGCAAAGAAGTTAGGCCCCGCTCTTACAAACATCTAGCATTTTGTATGGTCT",
+      "description": "This sequence demonstrates strong exon skipping (actual PSI = 0.000)",
+      "expected_psi": 0.0
+    }
+  ]
+}
