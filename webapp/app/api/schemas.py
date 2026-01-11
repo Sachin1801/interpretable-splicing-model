@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import re
 
-from app.config import settings
+from webapp.app.config import settings
 
 
 class SequenceInput(BaseModel):

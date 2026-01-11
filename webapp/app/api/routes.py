@@ -7,11 +7,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models.job import Job
-from app.services.predictor import get_predictor, SplicingPredictor
-from app.config import settings
-from app.api.schemas import (
+from webapp.app.database import get_db
+from webapp.app.models.job import Job
+from webapp.app.services.predictor import get_predictor, SplicingPredictor
+from webapp.app.config import settings
+from webapp.app.api.schemas import (
     SequenceInput,
     BatchSequenceInput,
     PredictionResponse,
