@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
-from app.config import settings
+from webapp.app.config import settings
 
 # Create SQLite engine
 engine = create_engine(
@@ -23,7 +23,7 @@ Base = declarative_base()
 
 def init_db():
     """Initialize database tables."""
-    from app.models.job import Job  # noqa: F401
+    from webapp.app.models.job import Job  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

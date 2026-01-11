@@ -9,9 +9,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
-from app.config import settings
-from app.database import init_db
-from app.api.routes import router as api_router
+from webapp.app.config import settings
+from webapp.app.database import init_db
+from webapp.app.api.routes import router as api_router
 
 # Configure logging
 logging.basicConfig(
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     # Pre-load the model
     logger.info("Pre-loading prediction model...")
     try:
-        from app.services.predictor import get_predictor
+        from webapp.app.services.predictor import get_predictor
         predictor = get_predictor()
         logger.info("Model loaded successfully")
     except Exception as e:

@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 import logging
 
-from app.config import settings
+from webapp.app.config import settings
 
 # Set up logging
 logger = logging.getLogger(__name__)

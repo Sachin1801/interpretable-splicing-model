@@ -7,8 +7,8 @@ from typing import Optional, List
 import json
 import uuid
 
-from app.database import Base
-from app.config import settings
+from webapp.app.database import Base
+from webapp.app.config import settings
 
 
 class Job(Base):
