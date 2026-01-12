@@ -244,6 +244,165 @@ Correlation: 0.9069
 
 ---
 
+## Session 3 - 2026-01-12
+
+### Session Start
+- **Task**: Fix webapp model loading, fix bugs, create comprehensive TODO, full UI rebuild
+- **Status**: COMPLETE
+
+### Work Completed
+
+#### Phase 1: Model Loading Fix in Webapp
+
+**Problem**: The webapp's `predictor.py` used complex `tf_keras` loading approach that was unreliable.
+
+**Solution**: Simplified to use the same approach that works in `test_model.py`:
+```python
+# webapp/app/services/predictor.py
+import sys
+sys.path.insert(0, str(settings.project_root / 'figures'))
+from quad_model import *  # Auto-registers custom layers
+from tensorflow.keras.models import load_model
+
+def _load_model(self):
+    self._model = load_model(str(settings.model_path))
+```
+
+**Files Modified**:
+- `webapp/app/services/predictor.py` - Simplified model loading
+- `webapp/requirements.txt` - Pinned TensorFlow 2.15.0
+
+#### Phase 2: Bug Fixes
+
+1. **CSV/JSON Download Not Working**
+   - Problem: Export endpoint returned JSON dict instead of file response
+   - Fix: Used `fastapi.responses.Response` with `Content-Disposition` header
+   - File: `webapp/app/api/routes.py`
+
+2. **Health Check Failing**
+   - Problem: SQLAlchemy 2.0 requires `text()` wrapper for raw SQL
+   - Fix: Changed `db.execute("SELECT 1")` to `db.execute(text("SELECT 1"))`
+   - File: `webapp/app/api/routes.py`
+
+3. **Missing Dependency**
+   - Problem: `pydantic_settings` module not found
+   - Fix: Installed with `pip install pydantic-settings`
+
+#### Phase 3: Documentation & TODO
+
+Created comprehensive `webapp/TODO.md` (455+ lines) documenting:
+- Completed work
+- UI/UX improvements needed
+- Missing content (About, Methodology pages)
+- Feature gaps (batch upload, PDF export)
+- Technical debt
+- Deployment requirements
+- NAR Web Server compliance checklist
+- Testing requirements
+
+Created `CLAUDE.md` with project memory:
+- No "Co-Authored-By: Claude" in commit messages
+
+#### Phase 4: Full UI Rebuild (Major Work)
+
+Rebuilt entire webapp UI with Jinja2 templates and Tailwind CSS.
+
+**Templates Created** (`webapp/templates/`):
+
+| File | Description | Lines |
+|------|-------------|-------|
+| `base.html` | Base template with Tailwind, navigation, footer | ~175 |
+| `index.html` | Home page with prediction form, examples | ~175 |
+| `result.html` | Results page with PSI display, force plot | ~135 |
+| `about.html` | **NEW** - Comprehensive model info, limitations, performance | ~300 |
+| `methodology.html` | Technical details, architecture diagram, training info | ~320 |
+| `help.html` | User guide, PSI interpretation, FAQ with toggle | ~350 |
+| `tutorial.html` | Step-by-step guide, API examples | ~250 |
+
+**Static Files Created** (`webapp/static/`):
+
+| File | Description |
+|------|-------------|
+| `js/app.js` | Form validation, submission, example loading |
+| `js/result.js` | Polling for results, Plotly force plot visualization |
+| `css/custom.css` | Custom styles, accessibility, print styles |
+
+**main.py Updates**:
+- Removed ~700 lines of inline HTML fallbacks
+- All routes now use Jinja2 templates
+- Added `/about` route
+- Added Jinja2 dependency to requirements
+
+**Design Features**:
+- Tailwind CSS via CDN (no build step)
+- Primary color: Blue (#3b82f6)
+- Responsive design (mobile-first)
+- Accessible (focus indicators, color contrast)
+- Professional scientific aesthetic
+- Consistent navigation across all pages
+- "Free and open" banner
+
+### Testing Results
+- All pages load correctly with Tailwind styling
+- Navigation works across all pages
+- Prediction API returns correct PSI values
+- Result page displays with force plot
+- Static files served correctly
+- Export CSV/JSON working
+
+### Files Modified This Session
+```
+webapp/
+├── app/
+│   ├── main.py              # Simplified to use templates
+│   ├── api/routes.py        # Fixed exports & health check
+│   └── services/predictor.py # Simplified model loading
+├── templates/
+│   ├── base.html            # NEW
+│   ├── index.html           # NEW
+│   ├── result.html          # NEW
+│   ├── about.html           # NEW
+│   ├── methodology.html     # NEW
+│   ├── help.html            # NEW
+│   └── tutorial.html        # NEW
+├── static/
+│   ├── css/custom.css       # NEW
+│   └── js/
+│       ├── app.js           # NEW
+│       └── result.js        # NEW
+├── requirements.txt         # Updated (TF 2.15, Jinja2)
+└── TODO.md                  # NEW (comprehensive)
+
+CLAUDE.md                    # NEW (project memory)
+```
+
+### Git Commit
+```
+feat(webapp): working local server checkpoint
+
+- Model loading works with TensorFlow 2.15
+- Predictions returning correct PSI values
+- Export CSV/JSON functional
+- Basic HTML interface working
+```
+
+### How to Run
+```bash
+source venv310/bin/activate
+python -m uvicorn webapp.app.main:app --port 8000
+# Open http://localhost:8000
+```
+
+### Remaining Work (See TODO.md)
+- [ ] PyShiny visualization components
+- [ ] Batch file upload UI
+- [ ] PDF export
+- [ ] Docker configuration
+- [ ] Deployment
+- [ ] NAR Web Server compliance pages
+
+---
+
 ## Future Sessions
 
 _Sessions will be logged here as work progresses._

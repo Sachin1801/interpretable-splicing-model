@@ -1,0 +1,201 @@
+/**
+ * Custom CSS for Splicing Predictor
+ * Supplements Tailwind CSS with application-specific styles
+ */
+
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Sequence textarea styling */
+#sequence {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    letter-spacing: 0.05em;
+    resize: vertical;
+}
+
+/* Sequence display styling */
+.sequence-display {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    letter-spacing: 0.05em;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+/* Structure display styling */
+.structure-display {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    letter-spacing: 0.05em;
+}
+
+/* Force plot container */
+#force-plot {
+    min-height: 400px;
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* FAQ toggle animation */
+.faq-toggle svg {
+    transition: transform 0.2s ease-in-out;
+}
+
+.faq-toggle svg.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Card hover effects */
+.card-hover {
+    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Example card cursor */
+[onclick] {
+    cursor: pointer;
+}
+
+/* Code block styling */
+pre code {
+    display: block;
+    overflow-x: auto;
+}
+
+/* Truncate with ellipsis */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Focus styles for accessibility */
+button:focus,
+a:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Hide focus outline for mouse users */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Print styles */
+@media print {
+    /* Hide navigation and interactive elements */
+    nav,
+    footer,
+    button,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Ensure content is visible */
+    .print-only {
+        display: block !important;
+    }
+
+    /* Remove shadows and borders for cleaner print */
+    .shadow-sm,
+    .shadow {
+        box-shadow: none !important;
+    }
+
+    /* Ensure text is black for printing */
+    body {
+        color: #000 !important;
+        background: #fff !important;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+    /* Larger touch targets */
+    button,
+    a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better text readability */
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    /* Full width buttons on mobile */
+    .btn-mobile-full {
+        width: 100%;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .border-gray-200 {
+        border-color: #000 !important;
+    }
+
+    .text-gray-500 {
+        color: #000 !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    html {
+        scroll-behavior: auto;
+    }
+}

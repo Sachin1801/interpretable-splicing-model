@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Tutorial - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold text-gray-900">Tutorial</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            A step-by-step guide to predicting RNA splicing outcomes
+        </p>
+    </div>
+
+    <!-- Time Estimate -->
+    <div class="bg-primary-50 rounded-lg p-4 mb-8 flex items-center">
+        <svg class="h-6 w-6 text-primary-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="text-primary-800">This tutorial takes about <strong>5 minutes</strong> to complete</span>
+    </div>
+
+    <!-- Step 1 -->
+    <section class="mb-12">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="flex items-center justify-center h-10 w-10 rounded-full bg-primary-600 text-white font-bold">1</span>
+            </div>
+            <div class="ml-4 flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-3">Prepare Your Sequence</h2>
+                <p class="text-gray-600 mb-4">
+                    You'll need a 70-nucleotide exon sequence. This represents the cassette exon you want to analyze.
+                </p>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+                    <h3 class="font-medium text-gray-900 mb-2">Checklist</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-gray-600">
+                            <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Exactly 70 nucleotides long
+                        </li>
+                        <li class="flex items-center text-gray-600">
+                            <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Only A, C, G, T (no U, N, or other characters)
+                        </li>
+                        <li class="flex items-center text-gray-600">
+                            <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            No spaces, headers, or line breaks
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 class="font-medium text-yellow-800 mb-1">Don't have a sequence?</h4>
+                    <p class="text-sm text-yellow-700">
+                        No problem! Click the <strong>"Try Example"</strong> button on the home page to load a sample sequence.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="mb-12">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="flex items-center justify-center h-10 w-10 rounded-full bg-primary-600 text-white font-bold">2</span>
+            </div>
+            <div class="ml-4 flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-3">Enter Your Sequence</h2>
+                <p class="text-gray-600 mb-4">
+                    Go to the <a href="/" class="text-primary-600 hover:text-primary-800">home page</a> and paste your sequence into the text area.
+                </p>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+                    <h3 class="font-medium text-gray-900 mb-3">Example Sequence</h3>
+                    <div class="bg-gray-50 rounded p-3 font-mono text-sm break-all">
+                        GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        This sequence has high inclusion (PSI ~0.98)
+                    </p>
+                </div>
+
+                <p class="text-gray-600">
+                    As you type, you'll see:
+                </p>
+                <ul class="mt-2 space-y-1 text-gray-600">
+                    <li>• A character counter showing <code class="bg-gray-100 px-1 rounded">X/70 nucleotides</code></li>
+                    <li>• Validation messages if something is wrong</li>
+                    <li>• The "Predict PSI" button will enable when your input is valid</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="mb-12">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="flex items-center justify-center h-10 w-10 rounded-full bg-primary-600 text-white font-bold">3</span>
+            </div>
+            <div class="ml-4 flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-3">Submit and Wait</h2>
+                <p class="text-gray-600 mb-4">
+                    Click the <strong>"Predict PSI"</strong> button to submit your sequence for analysis.
+                </p>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                    <h3 class="font-medium text-gray-900 mb-3">What happens behind the scenes</h3>
+                    <ol class="space-y-3">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-600 text-sm font-medium mr-3">1</span>
+                            <span class="text-gray-600">10nt flanking sequences are added to create a 90nt window</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-600 text-sm font-medium mr-3">2</span>
+                            <span class="text-gray-600">ViennaRNA predicts the secondary structure</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-600 text-sm font-medium mr-3">3</span>
+                            <span class="text-gray-600">The neural network computes PSI and position contributions</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-600 text-sm font-medium mr-3">4</span>
+                            <span class="text-gray-600">Results are saved and you're redirected to the result page</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <p class="mt-4 text-sm text-gray-500">
+                    <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Typical prediction time: 2-5 seconds
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="mb-12">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="flex items-center justify-center h-10 w-10 rounded-full bg-primary-600 text-white font-bold">4</span>
+            </div>
+            <div class="ml-4 flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-3">Understand Your Results</h2>
+                <p class="text-gray-600 mb-4">
+                    The result page shows several pieces of information:
+                </p>
+
+                <div class="space-y-4">
+                    <!-- PSI Value -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="font-medium text-gray-900 mb-2">PSI Value</h3>
+                        <p class="text-gray-600 mb-3">
+                            The main prediction, shown as a large number (0.00 to 1.00).
+                        </p>
+                        <div class="grid grid-cols-3 gap-3 text-center text-sm">
+                            <div class="bg-green-50 rounded p-2">
+                                <div class="font-bold text-green-700">0.8-1.0</div>
+                                <div class="text-green-600">High Inclusion</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded p-2">
+                                <div class="font-bold text-yellow-700">0.3-0.8</div>
+                                <div class="text-yellow-600">Variable</div>
+                            </div>
+                            <div class="bg-red-50 rounded p-2">
+                                <div class="font-bold text-red-700">0.0-0.3</div>
+                                <div class="text-red-600">High Skipping</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Structure -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="font-medium text-gray-900 mb-2">RNA Secondary Structure</h3>
+                        <p class="text-gray-600 mb-2">
+                            Shown in dot-bracket notation:
+                        </p>
+                        <div class="bg-gray-50 rounded p-3 font-mono text-xs">
+                            <span class="text-gray-500">.</span> = unpaired,
+                            <span class="text-gray-500">(</span> = base paired (5' side),
+                            <span class="text-gray-500">)</span> = base paired (3' side)
+                        </div>
+                    </div>
+
+                    <!-- MFE -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="font-medium text-gray-900 mb-2">Minimum Free Energy (MFE)</h3>
+                        <p class="text-gray-600">
+                            The thermodynamic stability of the predicted structure. More negative = more stable.
+                        </p>
+                    </div>
+
+                    <!-- Force Plot -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="font-medium text-gray-900 mb-2">Force Plot</h3>
+                        <p class="text-gray-600 mb-3">
+                            Shows how each position contributes to the PSI:
+                        </p>
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                                <span class="text-sm text-gray-600">Promotes inclusion</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                                <span class="text-sm text-gray-600">Promotes skipping</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 5 -->
+    <section class="mb-12">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="flex items-center justify-center h-10 w-10 rounded-full bg-primary-600 text-white font-bold">5</span>
+            </div>
+            <div class="ml-4 flex-grow">
+                <h2 class="text-xl font-bold text-gray-900 mb-3">Export Your Results</h2>
+                <p class="text-gray-600 mb-4">
+                    You can download your results in multiple formats:
+                </p>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center p-4 bg-gray-50 rounded">
+                            <div class="font-medium text-gray-900 mb-1">CSV</div>
+                            <p class="text-sm text-gray-500">For spreadsheets (Excel, Google Sheets)</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded">
+                            <div class="font-medium text-gray-900 mb-1">JSON</div>
+                            <p class="text-sm text-gray-500">For programmatic analysis</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded">
+                            <div class="font-medium text-gray-900 mb-1">Link</div>
+                            <p class="text-sm text-gray-500">Share or bookmark results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Try It Now -->
+    <section class="bg-primary-600 rounded-lg p-8 text-center text-white">
+        <h2 class="text-2xl font-bold mb-4">Ready to Try?</h2>
+        <p class="mb-6 text-primary-100">
+            Head to the home page and make your first prediction!
+        </p>
+        <a href="/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50">
+            <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            Start Predicting
+        </a>
+    </section>
+
+    <!-- API Section -->
+    <section class="mt-12 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Using the API</h2>
+        <p class="text-gray-600 mb-6">
+            For programmatic access, you can use our REST API directly.
+        </p>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="font-medium text-gray-900 mb-4">Quick Example (Python)</h3>
+            <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm"><code>import requests
+
+# Submit a prediction
+response = requests.post(
+    "{{ request.url.scheme }}://{{ request.url.netloc }}/api/predict",
+    json={"sequence": "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"}
+)
+
+result = response.json()
+print(f"PSI: {result['psi']}")
+print(f"Structure: {result['structure']}")</code></pre>
+        </div>
+
+        <div class="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="font-medium text-gray-900 mb-4">Quick Example (curl)</h3>
+            <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm"><code>curl -X POST "{{ request.url.scheme }}://{{ request.url.netloc }}/api/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"sequence": "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"}'</code></pre>
+        </div>
+
+        <p class="mt-4 text-gray-600">
+            See the <a href="/docs" class="text-primary-600 hover:text-primary-800">full API documentation</a> for more endpoints and options.
+        </p>
+    </section>
+
+    <!-- Navigation -->
+    <div class="border-t border-gray-200 pt-8 mt-8">
+        <div class="flex justify-between">
+            <a href="/help" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+                <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Help & FAQ
+            </a>
+            <a href="/docs" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+                API Documentation
+                <svg class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

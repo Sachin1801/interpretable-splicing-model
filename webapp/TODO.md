@@ -1,6 +1,6 @@
 # Splicing Predictor Web Application - Remaining Work
 
-> **Current Status**: Core prediction functionality working. UI needs significant improvements.
+> **Current Status**: Core prediction + UI complete. Need PyShiny visualizations, batch upload UI, and deployment.
 >
 > **Last Updated**: 2026-01-12
 
@@ -9,187 +9,168 @@
 ## Table of Contents
 
 1. [Completed Work](#completed-work)
-2. [UI/UX Improvements (HIGH PRIORITY)](#1-uiux-improvements-high-priority)
-3. [Missing Content](#2-missing-content)
-4. [Feature Gaps](#3-feature-gaps)
-5. [Technical Debt](#4-technical-debt)
-6. [Deployment](#5-deployment)
-7. [NAR Web Server Compliance](#6-nar-web-server-compliance)
-8. [Testing](#7-testing)
+2. [PyShiny Visualizations (HIGH PRIORITY)](#1-pyshiny-visualizations-high-priority)
+3. [Feature Gaps](#2-feature-gaps)
+4. [Technical Debt](#3-technical-debt)
+5. [Deployment](#4-deployment)
+6. [NAR Web Server Compliance](#5-nar-web-server-compliance)
+7. [Testing](#6-testing)
 
 ---
 
 ## Completed Work
 
+### Core Backend (Session 1-2)
 - [x] Model loading with TensorFlow 2.15 (Keras 2 compatibility)
 - [x] PSI prediction pipeline
 - [x] RNA secondary structure prediction (ViennaRNA integration)
-- [x] Force plot visualization (Plotly)
 - [x] Single sequence prediction API
 - [x] Batch prediction API
 - [x] CSV/JSON/TSV export with proper file downloads
 - [x] SQLite database for job storage
 - [x] Health check endpoint
 - [x] Example sequences endpoint
-- [x] Basic result page with force plot
+
+### Full UI Rebuild (Session 3) - COMPLETE
+- [x] **Jinja2 Templates** (`webapp/templates/`)
+  - [x] `base.html` - Base template with Tailwind, navigation, footer
+  - [x] `index.html` - Home/prediction page with form
+  - [x] `result.html` - Results display with force plot
+  - [x] `about.html` - Comprehensive model info, limitations, performance
+  - [x] `methodology.html` - Technical details, architecture diagram
+  - [x] `help.html` - User guide with FAQ
+  - [x] `tutorial.html` - Step-by-step guide
+
+- [x] **Tailwind CSS** (via CDN)
+  - [x] Consistent design system
+  - [x] Primary color scheme (Blue #3b82f6)
+  - [x] Responsive design (mobile-first)
+
+- [x] **Navigation header**
+  - [x] Logo/branding
+  - [x] Links: Home, About, Methodology, Help, Tutorial, API Docs
+  - [x] Mobile hamburger menu
+
+- [x] **Footer**
+  - [x] Citation information
+  - [x] GitHub link
+  - [x] Paper link
+
+- [x] **Loading states**
+  - [x] Spinner during prediction
+  - [x] Loading text with status
+
+- [x] **Error handling**
+  - [x] Inline validation messages
+  - [x] Error state display on result page
+
+- [x] **Responsive design**
+  - [x] Mobile-friendly layout
+  - [x] Touch-friendly buttons
+  - [x] Readable text on all devices
+
+- [x] **Static JavaScript** (`webapp/static/js/`)
+  - [x] `app.js` - Form validation, submission, example loading
+  - [x] `result.js` - Polling, Plotly force plot
+
+- [x] **Custom CSS** (`webapp/static/css/custom.css`)
+  - [x] Accessibility features
+  - [x] Print styles
+  - [x] Custom scrollbars
+
+### Content Pages - COMPLETE
+- [x] **About page** with:
+  - [x] What PSI prediction does
+  - [x] How the model works (simplified)
+  - [x] Who should use it
+  - [x] Limitations
+  - [x] Training data info
+  - [x] Performance metrics (R², RMSE, correlation)
+
+- [x] **Methodology page** with:
+  - [x] Input features explanation
+  - [x] ASCII architecture diagram
+  - [x] Interpretability features
+  - [x] Training details
+  - [x] ViennaRNA structure prediction
+
+- [x] **Help page** with:
+  - [x] Input requirements
+  - [x] PSI interpretation table
+  - [x] Force plot guide
+  - [x] FAQ with toggles
+
+- [x] **Tutorial page** with:
+  - [x] Step-by-step guide
+  - [x] API usage examples (Python, curl)
 
 ---
 
-## 1. UI/UX Improvements (HIGH PRIORITY)
+## 1. PyShiny Visualizations (HIGH PRIORITY)
 
-### Current Problems
+> **Note**: This section is for delegation to visualization teammate.
+> See `webapp/docs/PYSHINY_VISUALIZATION_SPEC.md` for detailed specification.
 
-The current UI is a basic inline HTML fallback with no design system:
+### Critical: Force Plot Backend Completion
 
-- **No proper template system** - HTML is embedded in Python code (`webapp/app/main.py`)
-- **No CSS framework** - Using inline `<style>` tags
-- **No navigation** - Users can't easily move between pages
-- **No responsive design** - Doesn't work well on mobile
-- **No loading states** - No spinners or progress indicators
-- **No error messages UI** - Errors show as basic alerts
-- **Inconsistent styling** - Each page styled separately
+The current force plot shows basic data but needs proper force computation:
 
-### Required Improvements
+- [ ] **Backend force computation** (`webapp/app/services/predictor.py`)
+  - [ ] Extract filter clustering from model
+  - [ ] Implement `_compute_forces()` method
+  - [ ] Group activations by filter clusters
+  - [ ] Apply link function for PSI mapping
+  - [ ] Return structured force data
 
-- [ ] **Move to Jinja2 templates** (`webapp/templates/`)
-  - [ ] `base.html` - Base template with navigation
-  - [ ] `index.html` - Home/prediction page
-  - [ ] `result.html` - Results display
-  - [ ] `about.html` - About the model
-  - [ ] `methodology.html` - Technical details
-  - [ ] `help.html` - User guide
-  - [ ] `batch.html` - Batch upload interface
-
-- [ ] **Add CSS framework** (Tailwind CSS recommended)
-  - [ ] Install Tailwind or use CDN
-  - [ ] Create consistent design system
-  - [ ] Add dark mode support (optional)
-
-- [ ] **Navigation header**
-  - [ ] Logo/branding
-  - [ ] Links: Home, About, Methodology, Help, API Docs
-  - [ ] Mobile hamburger menu
-
-- [ ] **Footer**
-  - [ ] Citation information
-  - [ ] Contact/feedback link
-  - [ ] Privacy policy link
-  - [ ] Funding acknowledgments
-
-- [ ] **Loading states**
-  - [ ] Spinner during prediction
-  - [ ] Progress bar for batch uploads
-  - [ ] Skeleton loaders for async content
-
-- [ ] **Error handling**
-  - [ ] Toast notifications for errors
-  - [ ] Inline validation messages
-  - [ ] Friendly error pages (404, 500)
-
-- [ ] **Responsive design**
-  - [ ] Mobile-friendly layout
-  - [ ] Touch-friendly buttons
-  - [ ] Readable text on all devices
-
----
-
-## 2. Missing Content
-
-### About the Model
-
-The landing page has almost no information about what the model does. Need to add:
-
-- [ ] **What it predicts**
-  - PSI (Percent Spliced In) values
-  - Range: 0 (completely skipped) to 1 (completely included)
-  - Alternative splicing outcomes
-
-- [ ] **How it works (simplified)**
-  - Takes 70nt exon sequence as input
-  - Adds flanking sequences
-  - Predicts RNA secondary structure
-  - Neural network predicts splicing outcome
-
-- [ ] **Who should use it**
-  - Researchers studying RNA splicing
-  - Designing synthetic exons
-  - Understanding splicing regulation
-
-- [ ] **Limitations**
-  - Only works with 70nt exon sequences
-  - Trained on HeLa cell data (ES7 library)
-  - May not generalize to all cell types
-  - Does not consider cellular context
-
-### Model Architecture Page
-
-- [ ] **Input features**
-  - Sequence one-hot encoding (90×4)
-  - Structure one-hot encoding (90×3)
-  - Wobble pair indicators (90×1)
-
-- [ ] **Architecture diagram**
-  - Sequence branch: Conv1D (20 filters, width 6)
-  - Structure branch: Conv1D (8 filters, width 30)
-  - Position-specific biases
-  - Inclusion vs skipping energy computation
-  - Residual tuner MLP
-  - Sigmoid output
-
-- [ ] **Interpretability features**
-  - Position-specific bias visualization
-  - Separate inclusion/skipping branches
-  - Force plot explanation
-
-### Research Background
-
-- [ ] **Citation**
-  ```
-  Liao SE, Sudarshan M, and Regev O.
-  "Machine learning for discovery: deciphering RNA splicing logic."
-  bioRxiv (2022).
+- [ ] **API response update**
+  ```json
+  {
+    "force_plot": {
+      "positions": [1-90],
+      "inclusion_forces": {"group_1": [...], ...},
+      "skipping_forces": {"group_1": [...], ...},
+      "delta_force": [...],
+      "annotations": [...]
+    }
+  }
   ```
 
-- [ ] **Link to paper** (bioRxiv)
-- [ ] **Link to GitHub** (original repo)
-- [ ] **Contact information** for authors
+### Visualization Components Needed
 
-### Training Data Information
+| Component | Priority | Estimated Hours | Description |
+|-----------|----------|-----------------|-------------|
+| Force Plot (enhanced) | CRITICAL | 12-16h | Stacked bars with proper data |
+| Position Saliency Heatmap | HIGH | 8-10h | Which positions matter most |
+| Structure Viewer | HIGH | 4-8h | Interactive RNA structure |
+| PSI Gauge | MEDIUM | 2-4h | Visual PSI indicator |
+| Batch Results Table | MEDIUM | 6-8h | Sortable with mini plots |
+| Activation Gallery | LOW | 14-18h | Filter analysis page |
+| Performance Dashboard | LOW | 10-12h | Model metrics visualization |
 
-- [ ] **Dataset**: ES7_HeLa (A, B, C libraries)
-- [ ] **Size**: ~150,000 synthetic exons
-- [ ] **Cell type**: HeLa cells
-- [ ] **Experimental method**: MPRA (Massively Parallel Reporter Assay)
+### Reference Implementation
 
-### Performance Metrics
-
-- [ ] **Test R²**: ~0.85
-- [ ] **Test RMSE**: ~0.12
-- [ ] **Correlation**: ~0.92
-- [ ] **Binary KL Loss**: ~0.015-0.020
+Key files to study:
+- `/figures/force_plot.py` - Main visualization logic (468 lines)
+- `/figures/figutils.py` - Data preparation utilities
+- `/2022_03_11_figures/position_specific_activations.ipynb` - Research visualizations
 
 ---
 
-## 3. Feature Gaps
+## 2. Feature Gaps
 
 ### High Priority
 
-- [ ] **Batch file upload**
+- [ ] **Batch file upload UI**
+  - [ ] File dropzone component
   - [ ] Accept FASTA format
   - [ ] Accept CSV format (one sequence per line)
   - [ ] Validate all sequences before processing
   - [ ] Show progress during batch processing
   - [ ] Allow download of all results
 
-- [ ] **Improved force plot**
-  - [ ] Show sequence letters on x-axis
-  - [ ] Highlight key positions
-  - [ ] Add structure annotation
-  - [ ] Export as PNG/SVG
-
 - [ ] **Result sharing**
-  - [ ] Permalink to results (already have job IDs)
-  - [ ] Copy link button
+  - [x] Permalink to results (job IDs work)
+  - [x] Copy link button (implemented)
   - [ ] Social sharing (optional)
 
 ### Medium Priority
@@ -200,15 +181,13 @@ The landing page has almost no information about what the model does. Need to ad
   - [ ] Include input sequence
   - [ ] Include methodology summary
 
-- [ ] **Sequence editor**
+- [ ] **Sequence editor enhancements**
   - [ ] Syntax highlighting for nucleotides
-  - [ ] Visual feedback for invalid characters
   - [ ] Complement/reverse complement tools
 
-- [ ] **Multiple examples**
-  - [ ] Show all 3 examples in UI
-  - [ ] Explain what each demonstrates
-  - [ ] Allow users to modify and re-predict
+- [x] **Multiple examples** - DONE
+  - [x] Show all 3 examples in UI (on index page)
+  - [x] Explain what each demonstrates
 
 ### Low Priority
 
@@ -218,42 +197,23 @@ The landing page has almost no information about what the model does. Need to ad
 
 - [ ] **Job history**
   - [ ] Show recent predictions
-  - [ ] Allow re-running previous jobs
   - [ ] LocalStorage for client-side history
-
-- [ ] **API key management** (if needed for rate limiting)
 
 ---
 
-## 4. Technical Debt
+## 3. Technical Debt
 
-### Code Quality
+### Code Quality - MOSTLY COMPLETE
 
-- [ ] **Extract HTML to templates**
-  - Move all inline HTML from `main.py` to `templates/`
-  - Use Jinja2 template inheritance
-
-- [ ] **CSS refactoring**
-  - Move inline styles to `static/css/`
-  - Use CSS variables for theming
-  - Consider CSS framework
-
-- [ ] **JavaScript improvements**
-  - Move inline scripts to `static/js/`
-  - Use modern ES6+ syntax
-  - Consider Alpine.js or htmx for interactivity
+- [x] **Templates** - All HTML in `templates/`
+- [x] **CSS** - Using Tailwind + custom.css
+- [x] **JavaScript** - Separate files in `static/js/`
 
 ### API Improvements
 
 - [ ] **Rate limiting**
   - Prevent abuse
   - Per-IP limits
-  - Optional API keys for higher limits
-
-- [ ] **Request validation**
-  - Better error messages
-  - Sequence format validation
-  - Input sanitization
 
 - [ ] **Response caching**
   - Cache identical predictions
@@ -262,28 +222,20 @@ The landing page has almost no information about what the model does. Need to ad
 ### Database
 
 - [ ] **Job cleanup**
-  - Scheduled task to delete old jobs
-  - Configurable retention period
+  - Scheduled task to delete old jobs (>7 days)
 
 - [ ] **Indexes**
   - Add indexes for common queries
-  - Optimize job lookup by ID
 
 ### Logging
 
 - [ ] **Structured logging**
   - JSON format for production
   - Request/response logging
-  - Error tracking
-
-- [ ] **Monitoring**
-  - Request latency metrics
-  - Error rate tracking
-  - Model prediction time
 
 ---
 
-## 5. Deployment
+## 4. Deployment
 
 ### Docker Configuration
 
@@ -297,124 +249,52 @@ The landing page has almost no information about what the model does. Need to ad
   ```
 
 - [ ] **docker-compose.yml**
-  - Web service
-  - Volume for database
-  - Environment variables
-
 - [ ] **.dockerignore**
-  - Exclude venv, __pycache__, .git
 
 ### Production Server
 
 - [ ] **Gunicorn configuration**
-  - Multiple workers
-  - Timeout settings
-  - Logging
-
 - [ ] **Nginx reverse proxy**
-  - SSL termination
-  - Static file serving
-  - Rate limiting
-
-- [ ] **SSL/HTTPS**
-  - Let's Encrypt certificate
-  - Auto-renewal
+- [ ] **SSL/HTTPS** (Let's Encrypt)
 
 ### Environment Management
 
-- [ ] **Environment variables**
-  - Database path
-  - Debug mode
-  - Secret key
-  - SMTP settings
-
-- [ ] **.env.example**
-  - Document all variables
-  - Provide defaults
-
-### Cloud Deployment Options
-
-- [ ] **Option A: VPS (DigitalOcean, Linode)**
-  - Full control
-  - Manual setup required
-
-- [ ] **Option B: Platform as a Service**
-  - Railway, Render, Fly.io
-  - Easier deployment
-  - May have cold start issues
-
-- [ ] **Option C: Container service**
-  - Google Cloud Run
-  - AWS Fargate
-  - Auto-scaling
+- [ ] **.env.example** with documented variables
 
 ---
 
-## 6. NAR Web Server Compliance
-
-For publication in Nucleic Acids Research Web Server issue:
+## 5. NAR Web Server Compliance
 
 ### Required Pages
 
 - [ ] **Privacy policy**
-  - What data is collected
-  - How long it's stored
-  - Who has access
-
 - [ ] **Terms of service**
-  - Usage restrictions
-  - Disclaimer
-  - License
-
 - [ ] **Contact information**
-  - Email for support
-  - Issue reporting
-
 - [ ] **Funding acknowledgments**
-  - Grant numbers
-  - Institution
 
 ### Accessibility (WCAG 2.1)
 
-- [ ] **Keyboard navigation**
-- [ ] **Screen reader support**
-- [ ] **Color contrast ratios**
-- [ ] **Alt text for images**
-- [ ] **Focus indicators**
+- [x] **Keyboard navigation** (via Tailwind defaults)
+- [x] **Color contrast ratios** (checked)
+- [x] **Focus indicators** (in custom.css)
+- [ ] **Screen reader support** (needs audit)
+- [ ] **Alt text for images** (force plot needs description)
 
-### Mobile Support
+### Mobile Support - COMPLETE
 
-- [ ] **Responsive layout**
-- [ ] **Touch-friendly targets**
-- [ ] **Readable font sizes**
-
-### Reliability
-
-- [ ] **99.9% uptime target**
-- [ ] **Monitoring and alerting**
-- [ ] **Backup strategy**
-- [ ] **Disaster recovery plan**
+- [x] **Responsive layout**
+- [x] **Touch-friendly targets**
+- [x] **Readable font sizes**
 
 ---
 
-## 7. Testing
+## 6. Testing
 
 ### Unit Tests
 
 - [ ] **API endpoint tests**
-  - Test all routes
-  - Test error cases
-  - Test validation
-
 - [ ] **Model wrapper tests**
-  - Test prediction pipeline
-  - Test input preparation
-  - Test output format
-
 - [ ] **Database tests**
-  - Test job creation
-  - Test job retrieval
-  - Test job deletion
 
 ### Integration Tests
 
@@ -426,13 +306,10 @@ For publication in Nucleic Acids Research Web Server issue:
 
 - [ ] **Concurrent requests**
 - [ ] **Response time under load**
-- [ ] **Memory usage**
 
 ---
 
-## Quick Start for Next Session
-
-To continue development:
+## Quick Start
 
 ```bash
 # 1. Activate environment
@@ -445,11 +322,11 @@ python -m uvicorn webapp.app.main:app --reload --port 8000
 open http://localhost:8000
 ```
 
-## Priority Order
+## Priority Order (Updated)
 
-1. **UI/UX + Content** - Make it look professional and informative
-2. **Templates** - Move HTML out of Python code
-3. **Batch upload** - Key feature for usability
+1. ~~**UI/UX + Content**~~ - COMPLETE
+2. **PyShiny Visualizations** - Delegate to teammate
+3. **Batch upload UI** - Key feature for usability
 4. **Docker** - For deployment
 5. **Testing** - For reliability
 6. **NAR compliance** - For publication
