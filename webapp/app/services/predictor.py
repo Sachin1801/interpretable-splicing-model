@@ -6,26 +6,19 @@ import tensorflow as tf
 from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 import logging
+import sys
 
 from webapp.app.config import settings
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Import custom layers from model_training
-import sys
-sys.path.insert(0, str(settings.project_root))
-from model_training.model import (
-    binary_KL,
-    Selector,
-    ResidualTuner,
-    SumDiff,
-    RegularizedBiasLayer,
-    MultiRegularizer,
-    pos_reg,
-    adj_reg_fo,
-    adj_reg_so,
-)
+# Add figures directory to path - this auto-registers custom layers
+# via @register_keras_serializable decorators when quad_model is imported
+sys.path.insert(0, str(settings.project_root / 'figures'))
+from quad_model import *  # noqa: E402, F401, F403
+
+from tensorflow.keras.models import load_model
 
 
 class SplicingPredictor:
@@ -49,23 +42,13 @@ class SplicingPredictor:
         """Load the pre-trained TensorFlow model."""
         logger.info(f"Loading model from {settings.model_path}")
 
-        custom_objects = {
-            "binary_KL": binary_KL,
-            "Selector": Selector,
-            "ResidualTuner": ResidualTuner,
-            "SumDiff": SumDiff,
-            "RegularizedBiasLayer": RegularizedBiasLayer,
-            "MultiRegularizer": MultiRegularizer,
-            "pos_reg": pos_reg,
-            "adj_reg_fo": adj_reg_fo,
-            "adj_reg_so": adj_reg_so,
-        }
-
-        self._model = tf.keras.models.load_model(
-            str(settings.model_path),
-            custom_objects=custom_objects,
-        )
-        logger.info("Model loaded successfully")
+        try:
+            # Simple load - custom layers already registered via quad_model import
+            self._model = load_model(str(settings.model_path))
+            logger.info("Model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
     @property
     def model(self) -> tf.keras.Model:

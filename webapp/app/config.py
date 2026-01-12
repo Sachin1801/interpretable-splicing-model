@@ -13,14 +13,17 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
 
-    # Paths
-    project_root: Path = Path(__file__).parent.parent.parent.parent
+    # Paths - computed at class definition time
+    # __file__ = webapp/app/config.py
+    # parent.parent.parent = interpretable-splicing-model/
+    project_root: Path = Path(__file__).parent.parent.parent
     model_path: Path = project_root / "output" / "custom_adjacency_regularizer_20210731_124_step3.h5"
     data_path: Path = project_root / "data"
     database_path: Path = Path(__file__).parent.parent / "splicing.db"
 
-    # Database
-    database_url: str = f"sqlite:///{database_path}"
+    @property
+    def database_url(self) -> str:
+        return f"sqlite:///{self.database_path}"
 
     # Job settings
     job_retention_days: int = 30
