@@ -4,8 +4,10 @@ import uuid
 import json
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from webapp.app.database import get_db
 from webapp.app.models.job import Job
@@ -40,7 +42,7 @@ async def health_check(db: Session = Depends(get_db)):
 
     db_connected = False
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_connected = True
     except Exception:
         pass
@@ -319,7 +321,7 @@ async def get_example_sequences():
 @router.get("/export/{job_id}/{format}", tags=["export"])
 async def export_results(
     job_id: str,
-    format: str = Query(..., regex="^(csv|json|tsv)$"),
+    format: str = Path(..., pattern="^(csv|json|tsv)$"),
     db: Session = Depends(get_db),
 ):
     """
@@ -335,7 +337,12 @@ async def export_results(
         raise HTTPException(status_code=400, detail="Job not yet complete")
 
     if format == "json":
-        return job.to_dict()
+        content = json.dumps(job.to_dict(), indent=2)
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="result_{job_id}.json"'}
+        )
 
     elif format in ("csv", "tsv"):
         delimiter = "," if format == "csv" else "\t"
@@ -367,9 +374,11 @@ async def export_results(
             ]
             content = delimiter.join(header) + "\n" + delimiter.join(row)
 
-        return {
-            "content": content,
-            "filename": f"result_{job_id}.{format}",
-        }
+        media_type = "text/csv" if format == "csv" else "text/tab-separated-values"
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="result_{job_id}.{format}"'}
+        )
 
     raise HTTPException(status_code=400, detail=f"Unsupported format: {format}")
