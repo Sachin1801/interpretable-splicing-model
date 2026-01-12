@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Methodology - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold text-gray-900">Methodology</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            Technical details of the interpretable splicing prediction model
+        </p>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="bg-gray-50 rounded-lg p-6 mb-8">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">On This Page</h2>
+        <nav class="space-y-1">
+            <a href="#input-features" class="block text-primary-600 hover:text-primary-800">Input Features</a>
+            <a href="#architecture" class="block text-primary-600 hover:text-primary-800">Model Architecture</a>
+            <a href="#interpretability" class="block text-primary-600 hover:text-primary-800">Interpretability</a>
+            <a href="#training" class="block text-primary-600 hover:text-primary-800">Training Details</a>
+            <a href="#structure-prediction" class="block text-primary-600 hover:text-primary-800">Structure Prediction</a>
+        </nav>
+    </div>
+
+    <!-- Input Features -->
+    <section id="input-features" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span class="bg-primary-100 text-primary-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
+            Input Features
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            The model takes a 90-nucleotide sequence (70nt exon + 10nt flanking on each side) and extracts three types of features:
+        </p>
+
+        <div class="space-y-6">
+            <!-- Sequence Encoding -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Sequence One-Hot Encoding</h3>
+                <p class="text-gray-600 mb-4">
+                    Each nucleotide is encoded as a 4-dimensional vector:
+                </p>
+                <div class="bg-gray-50 rounded-md p-4 font-mono text-sm">
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        <div><span class="text-green-600 font-bold">A</span> → [1,0,0,0]</div>
+                        <div><span class="text-blue-600 font-bold">C</span> → [0,1,0,0]</div>
+                        <div><span class="text-yellow-600 font-bold">G</span> → [0,0,1,0]</div>
+                        <div><span class="text-red-600 font-bold">T</span> → [0,0,0,1]</div>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-3">
+                    <strong>Shape:</strong> 90 × 4 matrix
+                </p>
+            </div>
+
+            <!-- Structure Encoding -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Structure One-Hot Encoding</h3>
+                <p class="text-gray-600 mb-4">
+                    RNA secondary structure is predicted using ViennaRNA (RNAfold) and encoded:
+                </p>
+                <div class="bg-gray-50 rounded-md p-4 font-mono text-sm">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div><span class="font-bold">.</span> (unpaired) → [1,0,0]</div>
+                        <div><span class="font-bold">(</span> (left pair) → [0,1,0]</div>
+                        <div><span class="font-bold">)</span> (right pair) → [0,0,1]</div>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-3">
+                    <strong>Shape:</strong> 90 × 3 matrix
+                </p>
+            </div>
+
+            <!-- Wobble Pairs -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Wobble Pair Indicators</h3>
+                <p class="text-gray-600 mb-4">
+                    G-U (wobble) base pairs are weaker than Watson-Crick pairs. A binary indicator marks positions involved in wobble pairing:
+                </p>
+                <div class="bg-gray-50 rounded-md p-4 font-mono text-sm text-center">
+                    <span class="font-bold">1</span> if position is in a G-U pair, <span class="font-bold">0</span> otherwise
+                </div>
+                <p class="text-sm text-gray-500 mt-3">
+                    <strong>Shape:</strong> 90 × 1 vector
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p class="text-sm text-blue-800">
+                <strong>Total Input:</strong> 90 × 8 features per sequence (4 sequence + 3 structure + 1 wobble)
+            </p>
+        </div>
+    </section>
+
+    <!-- Model Architecture -->
+    <section id="architecture" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span class="bg-primary-100 text-primary-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
+            Model Architecture
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            The model uses a dual-branch architecture designed for interpretability. Each branch computes "energy" contributions to inclusion or skipping.
+        </p>
+
+        <!-- Architecture Diagram -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Architecture Overview</h3>
+            <div class="bg-gray-50 rounded-md p-6 font-mono text-xs overflow-x-auto">
+<pre class="text-center">
+┌─────────────────────────────────────────────────────────────────┐
+│                    Input: 90nt sequence                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+     ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+     │  Sequence   │  │  Structure  │  │   Wobble    │
+     │  (90 × 4)   │  │  (90 × 3)   │  │  (90 × 1)   │
+     └─────────────┘  └─────────────┘  └─────────────┘
+              │               │               │
+              ▼               │               │
+     ┌─────────────┐          │               │
+     │   Conv1D    │          │               │
+     │ 20 filters  │          │               │
+     │  width=6    │          ▼               │
+     └─────────────┘  ┌─────────────┐         │
+              │       │   Conv1D    │         │
+              │       │  8 filters  │         │
+              │       │  width=30   │         │
+              │       └─────────────┘         │
+              │               │               │
+              └───────────────┼───────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │   Position-Specific Biases    │
+              │   (90 inclusion + 90 skip)    │
+              └───────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+     ┌─────────────────┐             ┌─────────────────┐
+     │   E_inclusion   │             │    E_skipping   │
+     │   (sum over     │             │   (sum over     │
+     │   positions)    │             │   positions)    │
+     └─────────────────┘             └─────────────────┘
+              │                               │
+              └───────────────┬───────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │      ΔE = E_inc - E_skip      │
+              └───────────────────────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │   Residual Tuner (MLP)        │
+              │   Adds non-linear correction  │
+              └───────────────────────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │         σ(ΔE + residual)      │
+              │         → PSI (0-1)           │
+              └───────────────────────────────┘
+</pre>
+            </div>
+        </div>
+
+        <!-- Component Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <h4 class="font-semibold text-gray-900 mb-2">Sequence Branch</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Conv1D with 20 filters</li>
+                    <li>• Kernel width: 6 nucleotides</li>
+                    <li>• Detects sequence motifs</li>
+                    <li>• No activation (linear)</li>
+                </ul>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <h4 class="font-semibold text-gray-900 mb-2">Structure Branch</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Conv1D with 8 filters</li>
+                    <li>• Kernel width: 30 nucleotides</li>
+                    <li>• Captures structural context</li>
+                    <li>• Wider receptive field</li>
+                </ul>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <h4 class="font-semibold text-gray-900 mb-2">Position Biases</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• 90 inclusion biases</li>
+                    <li>• 90 skipping biases</li>
+                    <li>• Learned per-position</li>
+                    <li>• Position-specific effects</li>
+                </ul>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <h4 class="font-semibold text-gray-900 mb-2">Residual Tuner</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Small MLP network</li>
+                    <li>• Non-linear corrections</li>
+                    <li>• Captures interactions</li>
+                    <li>• Improves accuracy</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interpretability -->
+    <section id="interpretability" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span class="bg-primary-100 text-primary-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
+            Interpretability Features
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            Unlike black-box models, this architecture provides built-in interpretability through position-specific energy contributions.
+        </p>
+
+        <div class="space-y-6">
+            <!-- Force Plot Explanation -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Force Plot</h3>
+                <p class="text-gray-600 mb-4">
+                    The force plot shows how each position contributes to the final PSI prediction:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-green-50 rounded-md p-4">
+                        <div class="flex items-center mb-2">
+                            <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                            <span class="font-medium text-green-800">Positive values</span>
+                        </div>
+                        <p class="text-sm text-green-700">
+                            Promote exon <strong>inclusion</strong> (higher PSI)
+                        </p>
+                    </div>
+                    <div class="bg-red-50 rounded-md p-4">
+                        <div class="flex items-center mb-2">
+                            <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                            <span class="font-medium text-red-800">Negative values</span>
+                        </div>
+                        <p class="text-sm text-red-700">
+                            Promote exon <strong>skipping</strong> (lower PSI)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy Calculation -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Energy Calculation</h3>
+                <p class="text-gray-600 mb-4">
+                    For each position, the model computes:
+                </p>
+                <div class="bg-gray-50 rounded-md p-4 font-mono text-sm">
+                    <p class="mb-2"><strong>Contribution</strong> = E<sub>inclusion</sub>(pos) - E<sub>skipping</sub>(pos)</p>
+                    <p class="mb-2"><strong>Total ΔE</strong> = Σ Contribution(pos) for all positions</p>
+                    <p><strong>PSI</strong> = σ(ΔE + residual)</p>
+                </div>
+                <p class="text-sm text-gray-500 mt-3">
+                    Where σ is the sigmoid function mapping to [0, 1]
+                </p>
+            </div>
+
+            <!-- Advantages -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Advantages</h3>
+                <ul class="text-gray-600 space-y-2">
+                    <li class="flex items-start">
+                        <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span><strong>Additive decomposition:</strong> Total effect is sum of position effects</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span><strong>No post-hoc explanation:</strong> Interpretability is built into the model</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span><strong>Biologically meaningful:</strong> Separate inclusion/skipping pathways</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span><strong>Identifies key positions:</strong> Find which nucleotides matter most</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Training Details -->
+    <section id="training" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span class="bg-primary-100 text-primary-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</span>
+            Training Details
+        </h2>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Dataset</h3>
+                    <table class="w-full text-sm">
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Name</td>
+                            <td class="py-2 font-medium">ES7_HeLa</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Size</td>
+                            <td class="py-2 font-medium">~150,000 sequences</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Cell Type</td>
+                            <td class="py-2 font-medium">HeLa cells</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Method</td>
+                            <td class="py-2 font-medium">MPRA</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-gray-500">Libraries</td>
+                            <td class="py-2 font-medium">A, B, C</td>
+                        </tr>
+                    </table>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Training Setup</h3>
+                    <table class="w-full text-sm">
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Loss Function</td>
+                            <td class="py-2 font-medium">Binary KL Divergence</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Optimizer</td>
+                            <td class="py-2 font-medium">Adam</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Batch Size</td>
+                            <td class="py-2 font-medium">256</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 text-gray-500">Validation</td>
+                            <td class="py-2 font-medium">10% holdout</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-gray-500">Early Stopping</td>
+                            <td class="py-2 font-medium">Yes (patience=10)</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 class="font-medium text-yellow-800 mb-2">About MPRA</h4>
+            <p class="text-sm text-yellow-700">
+                <strong>Massively Parallel Reporter Assay</strong> is a high-throughput technique that allows simultaneous measurement of splicing outcomes for thousands of synthetic exon sequences. This provides ground-truth PSI values for model training.
+            </p>
+        </div>
+    </section>
+
+    <!-- Structure Prediction -->
+    <section id="structure-prediction" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span class="bg-primary-100 text-primary-700 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">5</span>
+            Structure Prediction
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            RNA secondary structure is predicted using <strong>ViennaRNA</strong>, a widely-used package for RNA structure prediction.
+        </p>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">ViennaRNA (RNAfold)</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">What it does</h4>
+                    <p class="text-gray-600 text-sm">
+                        Predicts the minimum free energy (MFE) secondary structure for an RNA sequence. This represents the most thermodynamically stable folding configuration.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">Example Output</h4>
+                    <div class="bg-gray-50 rounded-md p-4 font-mono text-xs overflow-x-auto">
+                        <p class="text-gray-500 mb-1"># Sequence</p>
+                        <p class="mb-2">GGTAGTACGCCAATTCGCCG...CTACATATACTACT</p>
+                        <p class="text-gray-500 mb-1"># Structure (dot-bracket notation)</p>
+                        <p class="mb-2">...(((....)))........(((...)))......</p>
+                        <p class="text-gray-500 mb-1"># Minimum Free Energy</p>
+                        <p>-12.30 kcal/mol</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">Why structure matters</h4>
+                    <p class="text-gray-600 text-sm">
+                        RNA secondary structure affects splicing by:
+                    </p>
+                    <ul class="text-sm text-gray-600 mt-2 space-y-1 ml-4">
+                        <li>• Sequestering splice sites in stem-loops</li>
+                        <li>• Exposing or hiding regulatory motifs</li>
+                        <li>• Bringing distant elements into proximity</li>
+                        <li>• Affecting protein binding accessibility</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <a href="https://www.tbi.univie.ac.at/RNA/" target="_blank" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                ViennaRNA Package Website
+            </a>
+        </div>
+    </section>
+
+    <!-- Navigation -->
+    <div class="border-t border-gray-200 pt-8 mt-8">
+        <div class="flex justify-between">
+            <a href="/about" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+                <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                About
+            </a>
+            <a href="/help" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+                Help & FAQ
+                <svg class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ settings.app_name }} - RNA Splicing Prediction{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Hero Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+            RNA Splicing Predictor
+        </h1>
+        <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            Predict alternative splicing outcomes using an interpretable deep learning model.
+            Enter a 70-nucleotide exon sequence to get a PSI (Percent Spliced In) prediction.
+        </p>
+    </div>
+
+    <!-- Quick Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-900">Input</h3>
+                    <p class="text-sm text-gray-500">70nt exon sequence</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-900">Output</h3>
+                    <p class="text-sm text-gray-500">PSI value (0-1)</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-900">Speed</h3>
+                    <p class="text-sm text-gray-500">Results in seconds</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prediction Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form id="predict-form">
+            <div class="mb-4">
+                <label for="sequence" class="block text-sm font-medium text-gray-700 mb-2">
+                    Exon Sequence
+                    <span class="text-gray-400 font-normal">(exactly 70 nucleotides, A/C/G/T only)</span>
+                </label>
+                <textarea
+                    id="sequence"
+                    name="sequence"
+                    rows="3"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm p-3 border"
+                    placeholder="Enter your 70-nucleotide exon sequence here...
+
+Example: GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"
+                    maxlength="70"
+                ></textarea>
+                <div class="mt-2 flex justify-between items-center">
+                    <span id="char-count" class="text-sm text-gray-500">0/70 nucleotides</span>
+                    <span id="validation-message" class="text-sm text-red-500 hidden"></span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button
+                    type="submit"
+                    id="submit-btn"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg class="hidden animate-spin -ml-1 mr-2 h-4 w-4 text-white" id="loading-spinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="submit-text">Predict PSI</span>
+                </button>
+                <button
+                    type="button"
+                    id="example-btn"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                    <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Try Example
+                </button>
+                <button
+                    type="button"
+                    id="clear-btn"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                    <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </form>
+
+        <!-- Error message -->
+        <div id="error-message" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div class="flex">
+                <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="ml-3 text-sm text-red-700" id="error-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Sequences -->
+    <div class="mt-8">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Example Sequences</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:border-primary-300 transition-colors" onclick="loadExample(0)">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-900">High Inclusion</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">PSI ~0.98</span>
+                </div>
+                <p class="text-xs text-gray-500 font-mono truncate">GGTAGTACGCCAATTCGCCG...</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:border-primary-300 transition-colors" onclick="loadExample(1)">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-900">Balanced</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">PSI ~0.49</span>
+                </div>
+                <p class="text-xs text-gray-500 font-mono truncate">CTACCACCTCCCAAGCTTAC...</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer hover:border-primary-300 transition-colors" onclick="loadExample(2)">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-900">High Skipping</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">PSI ~0.00</span>
+                </div>
+                <p class="text-xs text-gray-500 font-mono truncate">ACACTCCGCAGCACACTCGG...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learn More -->
+    <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500">
+            Want to learn more?
+            <a href="/about" class="text-primary-600 hover:text-primary-700 font-medium">About the model</a>
+            <span class="mx-2">|</span>
+            <a href="/methodology" class="text-primary-600 hover:text-primary-700 font-medium">How it works</a>
+            <span class="mx-2">|</span>
+            <a href="/tutorial" class="text-primary-600 hover:text-primary-700 font-medium">Tutorial</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+{% endblock %}
