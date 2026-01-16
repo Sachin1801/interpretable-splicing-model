@@ -10,8 +10,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
 from webapp.app.config import settings
-from webapp.app.database import init_db
+from webapp.app.database import init_db, get_db
 from webapp.app.api.routes import router as api_router
+from webapp.app.models.job import Job
+
+# PyShiny imports for heatmap visualization
+try:
+    from shiny import App
+    from webapp.app.shiny_apps.heatmap_app import create_app as create_heatmap_app
+    SHINY_AVAILABLE = True
+except ImportError:
+    SHINY_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("PyShiny not available - heatmap visualization will be disabled")
 
 # Configure logging
 logging.basicConfig(
@@ -91,6 +102,15 @@ static_path = Path(__file__).parent.parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
+# Mount PyShiny heatmap app
+if SHINY_AVAILABLE:
+    try:
+        heatmap_shiny_app = create_heatmap_app(api_base_url="http://localhost:8000")
+        app.mount("/shiny/heatmap", heatmap_shiny_app, name="shiny_heatmap")
+        logger.info("PyShiny heatmap app mounted at /shiny/heatmap")
+    except Exception as e:
+        logger.error(f"Failed to mount PyShiny heatmap app: {e}")
+
 # Set up templates
 templates_path = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path)) if templates_path.exists() else None
@@ -108,9 +128,18 @@ async def home(request: Request):
 
 @app.get("/result/{job_id}", response_class=HTMLResponse, include_in_schema=False)
 async def result_page(request: Request, job_id: str):
-    """Render the result page for a job."""
+    """Render the result page for a job. Uses batch_result.html for batch jobs."""
+    # Check if job is a batch job
+    db = next(get_db())
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        is_batch = job.is_batch if job else False
+    finally:
+        db.close()
+
+    template_name = "batch_result.html" if is_batch else "result.html"
     return templates.TemplateResponse(
-        "result.html",
+        template_name,
         {"request": request, "job_id": job_id, "settings": settings}
     )
 
@@ -137,6 +166,12 @@ async def tutorial_page(request: Request):
 async def methodology_page(request: Request):
     """Render the methodology page."""
     return templates.TemplateResponse("methodology.html", {"request": request, "settings": settings})
+
+
+@app.get("/history", response_class=HTMLResponse, include_in_schema=False)
+async def history_page(request: Request):
+    """Render the job history page."""
+    return templates.TemplateResponse("history.html", {"request": request, "settings": settings})
 
 
 if __name__ == "__main__":
