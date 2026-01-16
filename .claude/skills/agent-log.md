@@ -403,6 +403,253 @@ python -m uvicorn webapp.app.main:app --port 8000
 
 ---
 
+## Session 4 - 2026-01-15
+
+### Session Start
+- **Task**: Plan and implement multi-sequence input, file upload, token-based history, enhanced batch results
+- **Status**: COMPLETE
+
+### Requirements Gathered Through Q&A
+
+| Requirement | Decision |
+|-------------|----------|
+| Input text format | Support both FASTA and plain sequences (auto-detect) |
+| User identification | Token-based: auto-generate + allow user edit (NAR compliant) |
+| Auto job title format | `2026-01-15_abc12` (date + 5-char random ID) |
+| Token change behavior | Old jobs keep old token (no migration) |
+| CSV delimiter | Auto-detect (comma, semicolon, tab) |
+| Email notifications | Not for now |
+| History search | Job title + date range filter |
+| Results pagination | 25 per page |
+| Invalid sequences | Mark with "Invalid" badge (no details shown) |
+| Visualizations in dropdown | All (force plot, RNA structure, PSI gauge, sequence logo) |
+| Max batch size | 100 sequences (kept same) |
+
+### NAR Compliance Analysis
+
+User asked about NAR guidelines for user identification without authentication. Researched and confirmed:
+
+**NAR Requirements:**
+- No login/registration required (token is auto-generated)
+- Bookmarkable result URLs (`/result/{job_id}`)
+- User data private (only accessible via token/URL)
+- No tracking cookies (localStorage is allowed)
+
+**Token System Solution:**
+- Token format: `tok_xxxxxxxxxxxx` (12 random alphanumeric)
+- Auto-generated on first visit, stored in localStorage
+- User can edit/update token anytime
+- Old jobs keep old token when user changes it
+- Jobs searchable by token on `/history` page
+
+### Work Completed
+
+#### 1. Database Schema Changes (`webapp/app/models/job.py`)
+- Added `access_token` column (String(64), indexed)
+- Added `job_title` column (String(255))
+- Added new indexes: `idx_jobs_access_token`, `idx_jobs_created_at`
+- Updated `batch_sequences` to store named sequences: `[{name, sequence}, ...]`
+
+#### 2. API Schema Updates (`webapp/app/api/schemas.py`)
+- Added `SequenceItem` schema (name + sequence)
+- Updated `BatchSequenceInput` to accept `List[SequenceItem]`
+- Added `access_token`, `job_title`, `name` to `SequenceInput`
+- Added `JobSummary` and `JobHistoryResponse` for history endpoint
+- Added `PaginatedBatchResultsResponse` with stats (total, successful_count, invalid_count, average_psi)
+- Added `SequenceDetailResponse` for single sequence details
+- Added `BatchResultItem` with `index` field for pagination
+- Added `validate_single_sequence()` function for graceful validation
+
+#### 3. New API Endpoints (`webapp/app/api/routes.py`)
+- `GET /api/history` - Paginated job history by token with search & date filters
+- `DELETE /api/jobs/{job_id}` - Delete job (token verified)
+- `GET /api/batch/{job_id}/results` - Paginated batch results with search
+- `GET /api/batch/{job_id}/sequence/{index}` - Single sequence detail with force plot
+- Added `generate_job_title()` helper for auto job title generation
+- Modified `/api/predict` and `/api/batch` to handle access_token and job_title
+- Batch processing validates each sequence individually, marks invalid ones
+
+#### 4. New JavaScript Files (`webapp/static/js/`)
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `token.js` | Token management | `generateToken()`, `getOrCreateToken()`, `setToken()`, `copyTokenToClipboard()`, `initTokenDisplay()` |
+| `file-parser.js` | CSV/FASTA parsing | `parseFasta()`, `parseCSV()`, `parseFile()`, `detectDelimiter()`, `detectHeader()`, `validateSequence()` |
+| `history.js` | History page | `loadJobs()`, `renderJobs()`, `renderPagination()`, `deleteJob()`, `applyFilters()` |
+| `batch-result.js` | Batch results | `loadResults()`, `renderResults()`, `showDetail()`, `createForcePlot()`, `updateStats()` |
+
+#### 5. New Templates (`webapp/templates/`)
+
+| File | Description |
+|------|-------------|
+| `history.html` | Job history page with search, date filters, paginated table |
+| `batch_result.html` | Batch results with summary stats, search, pagination, detail modal |
+
+#### 6. Template Updates
+
+- **`index.html`**: Redesigned with token display, job title field, multi-sequence textarea, file upload button, sequence count display
+- **`base.html`**: Added "History" link to desktop and mobile navigation
+
+#### 7. Route Updates (`webapp/app/main.py`)
+- Added `/history` route
+- Updated `/result/{job_id}` to detect batch jobs and render `batch_result.html`
+
+### Files Created/Modified
+
+```
+webapp/
+├── app/
+│   ├── main.py                    # Modified: Added history route, batch detection
+│   ├── api/
+│   │   ├── routes.py              # Modified: New endpoints, batch validation
+│   │   └── schemas.py             # Modified: New schemas for history/batch
+│   └── models/
+│       └── job.py                 # Modified: access_token, job_title fields
+├── static/js/
+│   ├── token.js                   # NEW: Token management
+│   ├── file-parser.js             # NEW: CSV/FASTA parsing
+│   ├── history.js                 # NEW: History page logic
+│   └── batch-result.js            # NEW: Batch results page logic
+└── templates/
+    ├── base.html                  # Modified: Added History nav link
+    ├── index.html                 # Modified: Multi-sequence input, file upload
+    ├── history.html               # NEW: Job history page
+    └── batch_result.html          # NEW: Batch results page
+```
+
+### API Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/predict` | Single sequence (now with token/title) |
+| POST | `/api/batch` | Batch sequences with named items |
+| GET | `/api/history` | Paginated job history by token |
+| DELETE | `/api/jobs/{job_id}` | Delete job (token verified) |
+| GET | `/api/batch/{job_id}/results` | Paginated batch results |
+| GET | `/api/batch/{job_id}/sequence/{index}` | Single sequence detail |
+
+### Plan File
+See: `/Users/sachin/.claude/plans/structured-crafting-mitten.md`
+
+### How to Run
+```bash
+source venv310/bin/activate
+python -m uvicorn webapp.app.main:app --port 8000
+# Open http://localhost:8000
+```
+
+### Testing Checklist
+See testing instructions below in Session Notes.
+
+---
+
+## Session 5 - 2026-01-15
+
+### Session Start
+- **Task**: Implement PyShiny Filter × Position Heatmap Visualization
+- **Status**: COMPLETE
+
+### User Request
+User wanted to understand what "filters/features" mean in the model and implement a heatmap visualization (like the screenshot provided) showing filter activations across sequence positions using PyShiny.
+
+### What "Filters" Mean - Explanation Provided
+
+The CNN model has **56 convolutional filters** that act as pattern detectors:
+
+| Filter Type | Count | Purpose |
+|-------------|-------|---------|
+| `qc_incl` (incl_1 to incl_20) | 20 | Detect sequence patterns promoting **inclusion** |
+| `qc_skip` (skip_1 to skip_20) | 20 | Detect sequence patterns promoting **skipping** |
+| `c_incl_struct` (incl_struct_1-8) | 8 | Detect structure patterns for inclusion |
+| `c_skip_struct` (skip_struct_1-8) | 8 | Detect structure patterns for skipping |
+
+**Heatmap interpretation**:
+- Rows = Filter names
+- Columns = Positions in sequence (1-90)
+- Color intensity = Activation strength (brighter = stronger pattern detection)
+- Bright spots indicate where a filter detected its learned pattern
+
+### Work Completed
+
+#### 1. Added PyShiny Dependency
+**File**: `webapp/requirements.txt`
+```
+shiny>=0.8.0  # PyShiny for interactive visualizations
+```
+
+#### 2. Backend - Heatmap Data Extraction
+**File**: `webapp/app/services/predictor.py`
+
+Added `get_heatmap_data()` method (~65 lines) that:
+- Extracts activations from all 4 convolutional layers
+- Applies ReLU activation
+- Pads activations to align with 90 positions
+- Returns structured data: positions, nucleotides, filter_names, activations (56×90 matrix)
+
+#### 3. API Endpoint
+**File**: `webapp/app/api/routes.py`
+
+Added: `GET /api/heatmap/{job_id}`
+- Returns filter activation data for a completed job
+- Response includes 56 filters × 90 positions
+
+#### 4. PyShiny Heatmap App
+**New file**: `webapp/app/shiny_apps/heatmap_app.py` (~250 lines)
+
+Created interactive PyShiny app with:
+- Left panel: Filter checkboxes (grouped by inclusion/skipping/structure)
+- Main area: Plotly heatmap with viridis colorscale
+- Hover info: Position, nucleotide, filter name, activation value
+- Select All / Deselect All buttons
+
+#### 5. Mount PyShiny in FastAPI
+**File**: `webapp/app/main.py`
+
+- Added PyShiny import with graceful fallback
+- Mounted heatmap app at `/shiny/heatmap/`
+
+#### 6. Embed in Result Page
+**File**: `webapp/templates/result.html`
+
+Added heatmap section below force plot with iframe.
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `webapp/requirements.txt` | Added `shiny>=0.8.0` |
+| `webapp/app/services/predictor.py` | Added `get_heatmap_data()` method |
+| `webapp/app/api/routes.py` | Added `/api/heatmap/{job_id}` endpoint |
+| `webapp/app/main.py` | PyShiny import + mount at `/shiny/heatmap/` |
+| `webapp/templates/result.html` | Added heatmap iframe section |
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `webapp/app/shiny_apps/__init__.py` | Package init |
+| `webapp/app/shiny_apps/heatmap_app.py` | PyShiny heatmap application |
+
+### Testing Results
+
+```
+Heatmap API Response:
+  Positions: 90
+  Filter names: 56
+  Activations matrix: 56 filters x 90 positions
+SUCCESS: Heatmap API is working!
+```
+
+### How to Test (See detailed instructions below)
+
+```bash
+source venv310/bin/activate
+python -m uvicorn webapp.app.main:app --port 8000
+# Open http://localhost:8000
+```
+
+---
+
 ## Future Sessions
 
 _Sessions will be logged here as work progresses._

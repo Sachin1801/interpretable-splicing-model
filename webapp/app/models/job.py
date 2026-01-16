@@ -29,10 +29,14 @@ class Job(Base):
         default=lambda: datetime.utcnow() + timedelta(days=settings.job_retention_days),
     )
 
+    # User identification (NAR compliant - no login required)
+    access_token = Column(String(64), nullable=True)
+    job_title = Column(String(255), nullable=True)
+
     # Input data
     sequence = Column(Text, nullable=False)
     is_batch = Column(Boolean, default=False)
-    batch_sequences = Column(Text, nullable=True)  # JSON array
+    batch_sequences = Column(Text, nullable=True)  # JSON array: [{name, sequence}, ...]
     email = Column(String(255), nullable=True)
 
     # Results (nullable until job finishes)
@@ -53,6 +57,8 @@ class Job(Base):
     __table_args__ = (
         Index("idx_jobs_status", "status"),
         Index("idx_jobs_expires", "expires_at"),
+        Index("idx_jobs_access_token", "access_token"),
+        Index("idx_jobs_created_at", "created_at"),
     )
 
     def to_dict(self) -> dict:
@@ -63,6 +69,7 @@ class Job(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "job_title": self.job_title,
             "sequence": self.sequence,
             "is_batch": self.is_batch,
             "email": self.email,
@@ -89,13 +96,20 @@ class Job(Base):
 
         return result
 
-    def set_batch_sequences(self, sequences: List[str]):
-        """Set batch sequences as JSON."""
+    def set_batch_sequences(self, sequences: List[dict]):
+        """Set batch sequences as JSON. Format: [{name: str, sequence: str}, ...]"""
         self.batch_sequences = json.dumps(sequences)
 
-    def get_batch_sequences(self) -> List[str]:
-        """Get batch sequences from JSON."""
+    def get_batch_sequences(self) -> List[dict]:
+        """Get batch sequences from JSON. Returns [{name: str, sequence: str}, ...]"""
         return json.loads(self.batch_sequences) if self.batch_sequences else []
+
+    def get_sequence_count(self) -> int:
+        """Get the number of sequences in this job."""
+        if not self.is_batch:
+            return 1
+        sequences = self.get_batch_sequences()
+        return len(sequences) if sequences else 1
 
     def set_batch_results(self, results: List[dict]):
         """Set batch results as JSON."""

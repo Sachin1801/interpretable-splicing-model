@@ -81,6 +81,26 @@
             <div id="force-plot" class="w-full" style="height: 400px;"></div>
         </div>
 
+        <!-- Filter Activation Heatmap -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+                Filter Activation Heatmap
+                <span class="ml-2 text-gray-400 font-normal normal-case">
+                    (shows where each neural network filter activates across the sequence)
+                </span>
+            </h3>
+            <div id="heatmap-container" class="w-full" style="min-height: 500px;">
+                <iframe
+                    id="heatmap-iframe"
+                    src="/shiny/heatmap/?job_id={{ job_id }}"
+                    class="w-full border-0"
+                    style="height: 600px; min-height: 500px;"
+                    loading="lazy"
+                    title="Filter Activation Heatmap"
+                ></iframe>
+            </div>
+        </div>
+
         <!-- Actions -->
         <div class="flex flex-wrap gap-3">
             <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">

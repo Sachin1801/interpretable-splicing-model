@@ -331,6 +331,78 @@ class SplicingPredictor:
             "mfe": mfe,
         }
 
+    def get_heatmap_data(self, exon_sequence: str) -> Dict[str, Any]:
+        """
+        Extract filter activations for heatmap visualization.
+
+        Args:
+            exon_sequence: The 70nt exon sequence
+
+        Returns:
+            Dictionary with heatmap data:
+            - positions: list of position numbers (1-90)
+            - nucleotides: list of nucleotide characters
+            - filter_names: list of filter names
+            - activations: 2D matrix (filters × positions)
+        """
+        # Prepare input
+        inputs, structure, mfe, _ = self.prepare_input(exon_sequence)
+
+        # Get full sequence for nucleotide labels
+        full_sequence = self.add_flanking(exon_sequence.upper())
+
+        # Layer configurations: (layer_name, prefix, num_filters, kernel_width)
+        layer_configs = [
+            ("qc_incl", "incl", 20, 6),
+            ("qc_skip", "skip", 20, 6),
+            ("c_incl_struct", "incl_struct", 8, 30),
+            ("c_skip_struct", "skip_struct", 8, 30),
+        ]
+
+        filter_names = []
+        all_activations = []
+
+        for layer_name, prefix, num_filters, kernel_width in layer_configs:
+            try:
+                layer = self.model.get_layer(layer_name)
+                intermediate_model = tf.keras.Model(
+                    inputs=self.model.inputs,
+                    outputs=layer.output,
+                )
+                # Get activations: shape (1, output_len, num_filters)
+                raw_activations = intermediate_model.predict(inputs, verbose=0)[0]
+                output_len = raw_activations.shape[0]
+
+                for i in range(num_filters):
+                    filter_name = f"{prefix}_{i+1}"
+                    filter_names.append(filter_name)
+
+                    # Get this filter's activations and apply ReLU
+                    filter_activations = np.maximum(0, raw_activations[:, i])
+
+                    # Pad to 90 positions if needed
+                    if output_len < settings.total_length:
+                        # Center the activations with padding
+                        pad_left = (settings.total_length - output_len) // 2
+                        pad_right = settings.total_length - output_len - pad_left
+                        padded = np.pad(filter_activations, (pad_left, pad_right), mode='constant')
+                    else:
+                        # Already correct length
+                        padded = filter_activations
+
+                    all_activations.append(padded.tolist())
+
+            except Exception as e:
+                logger.warning(f"Could not extract layer {layer_name}: {e}")
+
+        return {
+            "positions": list(range(1, settings.total_length + 1)),
+            "nucleotides": list(full_sequence),
+            "filter_names": filter_names,
+            "activations": all_activations,
+            "structure": structure,
+        }
+
     @staticmethod
     def _get_interpretation(psi: float) -> str:
         """Get human-readable interpretation of PSI value."""
