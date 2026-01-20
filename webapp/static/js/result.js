@@ -59,6 +59,20 @@ function displayResults(data) {
     loadingState.classList.add('hidden');
     resultsContainer.classList.remove('hidden');
 
+    // For batch sequences, hide elements that don't support batch sequence detail
+    if (typeof batchIndex !== 'undefined' && batchIndex !== null) {
+        // Hide heatmap (shiny app doesn't support batch sequence detail)
+        const heatmapContainer = document.getElementById('heatmap-container');
+        if (heatmapContainer) {
+            heatmapContainer.parentElement.classList.add('hidden');
+        }
+        // Hide CSV download link (not available for individual batch sequences)
+        const csvLink = document.querySelector('a[href*="/api/export/"]');
+        if (csvLink) {
+            csvLink.classList.add('hidden');
+        }
+    }
+
     // PSI value
     const psi = data.psi;
     const interp = interpretPsi(psi);
@@ -204,7 +218,12 @@ async function fetchResult() {
     }
 
     try {
-        const response = await fetch(`/api/result/${jobId}`);
+        // Use different API endpoint for batch sequences
+        const apiUrl = (typeof batchIndex !== 'undefined' && batchIndex !== null)
+            ? `/api/batch/${jobId}/sequence/${batchIndex}`
+            : `/api/result/${jobId}`;
+
+        const response = await fetch(apiUrl);
 
         if (response.status === 404) {
             showError('Result not found. The job may have expired.');

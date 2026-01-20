@@ -144,6 +144,20 @@ async def result_page(request: Request, job_id: str):
     )
 
 
+@app.get("/batch/{job_id}/sequence/{index}", response_class=HTMLResponse, include_in_schema=False)
+async def batch_sequence_detail_page(request: Request, job_id: str, index: int):
+    """Render the result page for a single sequence from a batch job."""
+    return templates.TemplateResponse(
+        "result.html",
+        {
+            "request": request,
+            "job_id": job_id,
+            "batch_index": index,
+            "settings": settings,
+        }
+    )
+
+
 @app.get("/about", response_class=HTMLResponse, include_in_schema=False)
 async def about_page(request: Request):
     """Render the about page."""
