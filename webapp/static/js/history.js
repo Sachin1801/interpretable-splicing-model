@@ -1,24 +1,27 @@
 /**
- * History page JavaScript
+ * History page JavaScript - Sequence-centric view
  */
 
 // State
 let currentPage = 1;
 let pageSize = 25;
-let totalJobs = 0;
+let totalSequences = 0;
 let totalPages = 1;
 let currentFilters = {
     search: '',
     dateFrom: null,
     dateTo: null
 };
+let allSequences = [];  // Current page data
+let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: sequence object
+let showSequenceColumn = false;
 
 // DOM Elements
 const tokenDisplay = document.getElementById('token-display');
 const loadingState = document.getElementById('loading-state');
 const noJobsState = document.getElementById('no-jobs-state');
 const jobsTableContainer = document.getElementById('jobs-table-container');
-const jobsTableBody = document.getElementById('jobs-table-body');
+const sequencesTableBody = document.getElementById('sequences-table-body');
 const pagination = document.getElementById('pagination');
 const pageStart = document.getElementById('page-start');
 const pageEnd = document.getElementById('page-end');
@@ -30,15 +33,27 @@ const dateToInput = document.getElementById('date-to');
 const applyFiltersBtn = document.getElementById('apply-filters-btn');
 const clearFiltersBtn = document.getElementById('clear-filters-btn');
 const refreshBtn = document.getElementById('refresh-btn');
+const selectAllCheckbox = document.getElementById('select-all-checkbox');
+const bulkActionsToolbar = document.getElementById('bulk-actions-toolbar');
+const selectionCountEl = document.getElementById('selection-count');
+const columnVisibility = document.getElementById('column-visibility');
+const showSequenceColCheckbox = document.getElementById('show-sequence-col');
+const sequenceHeader = document.getElementById('sequence-header');
+
+// Modal elements
+const exportModal = document.getElementById('export-modal');
+const deleteModal = document.getElementById('delete-modal');
+const deleteCountEl = document.getElementById('delete-count');
+const deleteBatchWarning = document.getElementById('delete-batch-warning');
 
 /**
  * Initialize the page
  */
 document.addEventListener('DOMContentLoaded', () => {
     TokenManager.initTokenDisplay();
-    loadJobs();
+    loadSequences();
 
-    // Event listeners
+    // Filter event listeners
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', applyFilters);
     }
@@ -48,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => loadJobs());
+        refreshBtn.addEventListener('click', () => loadSequences());
     }
 
     // Search on Enter
@@ -71,23 +86,94 @@ document.addEventListener('DOMContentLoaded', () => {
                     tokenDisplay.textContent = newToken;
                 }
                 document.getElementById('token-edit-modal').classList.add('hidden');
-                loadJobs(); // Reload jobs with new token
+                selectedItems.clear();
+                updateBulkActionsToolbar();
+                loadSequences();
             } else {
                 alert('Invalid token format. Token must be in format: tok_xxxxxxxxxxxx');
             }
         });
     }
+
+    // Select all checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                selectAllOnPage();
+            } else {
+                deselectAllOnPage();
+            }
+        });
+    }
+
+    // Bulk action buttons
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const deselectAllBtn = document.getElementById('deselect-all-btn');
+    const exportSelectedBtn = document.getElementById('export-selected-btn');
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', selectAllOnPage);
+    }
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', deselectAll);
+    }
+    if (exportSelectedBtn) {
+        exportSelectedBtn.addEventListener('click', openExportModal);
+    }
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', openDeleteModal);
+    }
+
+    // Column visibility toggle
+    if (showSequenceColCheckbox) {
+        showSequenceColCheckbox.addEventListener('change', (e) => {
+            toggleSequenceColumn(e.target.checked);
+        });
+    }
+
+    // Export modal buttons
+    const exportCancelBtn = document.getElementById('export-cancel-btn');
+    const exportDownloadBtn = document.getElementById('export-download-btn');
+    if (exportCancelBtn) {
+        exportCancelBtn.addEventListener('click', closeExportModal);
+    }
+    if (exportDownloadBtn) {
+        exportDownloadBtn.addEventListener('click', exportSelected);
+    }
+
+    // Delete modal buttons
+    const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+    const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+    if (deleteCancelBtn) {
+        deleteCancelBtn.addEventListener('click', closeDeleteModal);
+    }
+    if (deleteConfirmBtn) {
+        deleteConfirmBtn.addEventListener('click', deleteSelected);
+    }
+
+    // Close modals on backdrop click
+    if (exportModal) {
+        exportModal.addEventListener('click', (e) => {
+            if (e.target === exportModal) closeExportModal();
+        });
+    }
+    if (deleteModal) {
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
+    }
 });
 
 /**
- * Apply current filters and load jobs
+ * Apply current filters and load sequences
  */
 function applyFilters() {
     currentFilters.search = searchInput.value.trim();
     currentFilters.dateFrom = dateFromInput.value || null;
     currentFilters.dateTo = dateToInput.value || null;
     currentPage = 1;
-    loadJobs();
+    loadSequences();
 }
 
 /**
@@ -103,16 +189,16 @@ function clearFilters() {
         dateTo: null
     };
     currentPage = 1;
-    loadJobs();
+    loadSequences();
 }
 
 /**
- * Load jobs from API
+ * Load sequences from API
  */
-async function loadJobs() {
+async function loadSequences() {
     const token = TokenManager.getOrCreateToken();
     if (!token) {
-        showNoJobs();
+        showNoSequences();
         return;
     }
 
@@ -136,43 +222,57 @@ async function loadJobs() {
             params.append('date_to', currentFilters.dateTo);
         }
 
-        const response = await fetch(`/api/history?${params.toString()}`);
+        const response = await fetch(`/api/history/sequences?${params.toString()}`);
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to load jobs');
+            throw new Error(error.detail || 'Failed to load sequences');
         }
 
         const data = await response.json();
-        totalJobs = data.total;
+        totalSequences = data.total;
         totalPages = data.total_pages;
+        allSequences = data.sequences;
 
-        if (data.jobs.length === 0) {
-            showNoJobs();
+        if (data.sequences.length === 0) {
+            showNoSequences();
         } else {
-            renderJobs(data.jobs);
+            renderSequences(data.sequences);
             renderPagination();
             showTable();
         }
 
     } catch (error) {
-        console.error('Error loading jobs:', error);
-        showNoJobs();
+        console.error('Error loading sequences:', error);
+        showNoSequences();
     }
 }
 
 /**
- * Render jobs in the table
+ * Get selection key for a sequence
  */
-function renderJobs(jobs) {
-    jobsTableBody.innerHTML = '';
+function getSelectionKey(seq) {
+    if (seq.is_batch && seq.batch_index !== null) {
+        return `${seq.job_id}:${seq.batch_index}`;
+    }
+    return seq.job_id;
+}
 
-    for (const job of jobs) {
+/**
+ * Render sequences in the table
+ */
+function renderSequences(sequences) {
+    sequencesTableBody.innerHTML = '';
+
+    for (const seq of sequences) {
         const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50';
+        row.className = 'hover:bg-gray-50 cursor-pointer';
 
-        const statusBadge = getStatusBadge(job.status);
-        const date = new Date(job.created_at).toLocaleDateString('en-US', {
+        const key = getSelectionKey(seq);
+        const isSelected = selectedItems.has(key);
+
+        const statusBadge = getStatusBadge(seq.status);
+        const date = new Date(seq.created_at).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -180,24 +280,318 @@ function renderJobs(jobs) {
             minute: '2-digit'
         });
 
+        // Format PSI - show as decimal or "-" if null
+        const psiDisplay = seq.psi !== null ? seq.psi.toFixed(3) : '-';
+
+        // Truncate sequence for display
+        const seqDisplay = seq.sequence.length > 20
+            ? seq.sequence.substring(0, 20) + '...'
+            : seq.sequence;
+
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-                <a href="/result/${job.id}" class="text-primary-600 hover:text-primary-800 font-medium">
-                    ${escapeHtml(job.job_title || job.id.substring(0, 8))}
-                </a>
+            <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                <input type="checkbox"
+                       class="seq-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                       data-key="${escapeHtml(key)}"
+                       ${isSelected ? 'checked' : ''}>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
-            <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${job.sequence_count} ${job.is_batch ? 'sequences' : 'sequence'}
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(seq.sequence_id)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-primary-600 hover:text-primary-800">
+                ${escapeHtml(seq.job_title || seq.job_id.substring(0, 8))}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <a href="/result/${job.id}" class="text-primary-600 hover:text-primary-800 mr-3">View</a>
-                <button onclick="deleteJob('${job.id}')" class="text-red-600 hover:text-red-800">Delete</button>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${date}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-mono ${seq.psi !== null ? 'text-gray-900' : 'text-gray-400'}">${psiDisplay}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${statusBadge}</td>
+            <td class="seq-col px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-500 ${showSequenceColumn ? '' : 'hidden'}">
+                <span title="${escapeHtml(seq.sequence)}">${escapeHtml(seqDisplay)}</span>
             </td>
         `;
 
-        jobsTableBody.appendChild(row);
+        // Row click navigates to detail
+        row.addEventListener('click', () => navigateToDetail(seq));
+
+        // Checkbox click
+        const checkbox = row.querySelector('.seq-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            e.stopPropagation();
+            toggleSelection(key, seq);
+        });
+
+        sequencesTableBody.appendChild(row);
+    }
+
+    // Update select all checkbox state
+    updateSelectAllCheckbox();
+}
+
+/**
+ * Navigate to sequence detail page
+ */
+function navigateToDetail(seq) {
+    if (seq.is_batch && seq.batch_index !== null) {
+        window.location.href = `/batch/${seq.job_id}/sequence/${seq.batch_index}`;
+    } else {
+        window.location.href = `/result/${seq.job_id}`;
+    }
+}
+
+/**
+ * Toggle selection for a sequence
+ */
+function toggleSelection(key, seq) {
+    if (selectedItems.has(key)) {
+        selectedItems.delete(key);
+    } else {
+        selectedItems.set(key, seq);
+    }
+    updateBulkActionsToolbar();
+    updateSelectAllCheckbox();
+}
+
+/**
+ * Select all sequences on current page
+ */
+function selectAllOnPage() {
+    for (const seq of allSequences) {
+        const key = getSelectionKey(seq);
+        selectedItems.set(key, seq);
+    }
+    renderSequences(allSequences);
+    updateBulkActionsToolbar();
+}
+
+/**
+ * Deselect all sequences on current page
+ */
+function deselectAllOnPage() {
+    for (const seq of allSequences) {
+        const key = getSelectionKey(seq);
+        selectedItems.delete(key);
+    }
+    renderSequences(allSequences);
+    updateBulkActionsToolbar();
+}
+
+/**
+ * Deselect all sequences
+ */
+function deselectAll() {
+    selectedItems.clear();
+    renderSequences(allSequences);
+    updateBulkActionsToolbar();
+}
+
+/**
+ * Update the bulk actions toolbar visibility and count
+ */
+function updateBulkActionsToolbar() {
+    const count = selectedItems.size;
+
+    if (count > 0) {
+        bulkActionsToolbar.classList.remove('hidden');
+        columnVisibility.classList.remove('hidden');
+        selectionCountEl.textContent = `${count} selected`;
+    } else {
+        bulkActionsToolbar.classList.add('hidden');
+        // Keep column visibility visible if table is shown
+        if (!jobsTableContainer.classList.contains('hidden')) {
+            columnVisibility.classList.remove('hidden');
+        } else {
+            columnVisibility.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * Update select all checkbox state
+ */
+function updateSelectAllCheckbox() {
+    if (!selectAllCheckbox) return;
+
+    const allOnPageSelected = allSequences.length > 0 &&
+        allSequences.every(seq => selectedItems.has(getSelectionKey(seq)));
+    const someOnPageSelected = allSequences.some(seq => selectedItems.has(getSelectionKey(seq)));
+
+    selectAllCheckbox.checked = allOnPageSelected;
+    selectAllCheckbox.indeterminate = someOnPageSelected && !allOnPageSelected;
+}
+
+/**
+ * Toggle sequence column visibility
+ */
+function toggleSequenceColumn(show) {
+    showSequenceColumn = show;
+
+    // Update header
+    if (sequenceHeader) {
+        sequenceHeader.classList.toggle('hidden', !show);
+    }
+
+    // Update all cells
+    document.querySelectorAll('.seq-col').forEach(cell => {
+        cell.classList.toggle('hidden', !show);
+    });
+}
+
+/**
+ * Open export modal
+ */
+function openExportModal() {
+    if (selectedItems.size === 0) {
+        alert('No sequences selected');
+        return;
+    }
+    exportModal.classList.remove('hidden');
+}
+
+/**
+ * Close export modal
+ */
+function closeExportModal() {
+    exportModal.classList.add('hidden');
+}
+
+/**
+ * Export selected sequences
+ */
+async function exportSelected() {
+    const token = TokenManager.getToken();
+    if (!token) {
+        alert('No access token found');
+        return;
+    }
+
+    // Gather selected columns
+    const columns = ['sequence_id']; // Always included
+    const columnCheckboxes = [
+        'job_title', 'created_at', 'psi', 'status', 'sequence',
+        'interpretation', 'structure', 'mfe'
+    ];
+
+    for (const col of columnCheckboxes) {
+        const checkbox = document.getElementById(`export-col-${col}`);
+        if (checkbox && checkbox.checked) {
+            columns.push(col);
+        }
+    }
+
+    // Build items list
+    const items = [];
+    for (const [key, seq] of selectedItems) {
+        items.push({
+            job_id: seq.job_id,
+            batch_index: seq.is_batch ? seq.batch_index : null
+        });
+    }
+
+    try {
+        const response = await fetch(`/api/sequences/export?access_token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items, columns })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to export sequences');
+        }
+
+        // Download the file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sequences_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        closeExportModal();
+
+    } catch (error) {
+        console.error('Error exporting sequences:', error);
+        alert('Failed to export sequences: ' + error.message);
+    }
+}
+
+/**
+ * Open delete modal
+ */
+function openDeleteModal() {
+    if (selectedItems.size === 0) {
+        alert('No sequences selected');
+        return;
+    }
+
+    // Update count
+    deleteCountEl.textContent = selectedItems.size;
+
+    // Check if any batch sequences are selected
+    let hasBatch = false;
+    for (const seq of selectedItems.values()) {
+        if (seq.is_batch) {
+            hasBatch = true;
+            break;
+        }
+    }
+
+    if (hasBatch) {
+        deleteBatchWarning.classList.remove('hidden');
+    } else {
+        deleteBatchWarning.classList.add('hidden');
+    }
+
+    deleteModal.classList.remove('hidden');
+}
+
+/**
+ * Close delete modal
+ */
+function closeDeleteModal() {
+    deleteModal.classList.add('hidden');
+}
+
+/**
+ * Delete selected sequences (deletes entire jobs)
+ */
+async function deleteSelected() {
+    const token = TokenManager.getToken();
+    if (!token) {
+        alert('No access token found');
+        return;
+    }
+
+    // Collect unique job IDs to delete
+    const jobIds = new Set();
+    for (const seq of selectedItems.values()) {
+        jobIds.add(seq.job_id);
+    }
+
+    try {
+        // Delete each job
+        for (const jobId of jobIds) {
+            const response = await fetch(`/api/jobs/${jobId}?access_token=${encodeURIComponent(token)}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error(`Failed to delete job ${jobId}:`, error);
+            }
+        }
+
+        // Clear selection and reload
+        selectedItems.clear();
+        updateBulkActionsToolbar();
+        closeDeleteModal();
+        loadSequences();
+
+    } catch (error) {
+        console.error('Error deleting sequences:', error);
+        alert('Failed to delete some sequences: ' + error.message);
     }
 }
 
@@ -209,9 +603,10 @@ function getStatusBadge(status) {
         'finished': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>',
         'running': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Running</span>',
         'queued': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Queued</span>',
-        'failed': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>'
+        'failed': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>',
+        'invalid': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Invalid</span>'
     };
-    return badges[status] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${status}</span>`;
+    return badges[status] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${escapeHtml(status)}</span>`;
 }
 
 /**
@@ -219,11 +614,11 @@ function getStatusBadge(status) {
  */
 function renderPagination() {
     const start = (currentPage - 1) * pageSize + 1;
-    const end = Math.min(currentPage * pageSize, totalJobs);
+    const end = Math.min(currentPage * pageSize, totalSequences);
 
     pageStart.textContent = start;
     pageEnd.textContent = end;
-    totalJobsEl.textContent = totalJobs;
+    totalJobsEl.textContent = totalSequences;
 
     // Clear existing buttons
     pageButtons.innerHTML = '';
@@ -236,7 +631,7 @@ function renderPagination() {
     prevBtn.addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
-            loadJobs();
+            loadSequences();
         }
     });
     pageButtons.appendChild(prevBtn);
@@ -256,7 +651,7 @@ function renderPagination() {
         btn.textContent = i;
         btn.addEventListener('click', () => {
             currentPage = i;
-            loadJobs();
+            loadSequences();
         });
         pageButtons.appendChild(btn);
     }
@@ -269,43 +664,10 @@ function renderPagination() {
     nextBtn.addEventListener('click', () => {
         if (currentPage < totalPages) {
             currentPage++;
-            loadJobs();
+            loadSequences();
         }
     });
     pageButtons.appendChild(nextBtn);
-}
-
-/**
- * Delete a job
- */
-async function deleteJob(jobId) {
-    if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
-        return;
-    }
-
-    const token = TokenManager.getToken();
-    if (!token) {
-        alert('No access token found');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/jobs/${jobId}?access_token=${encodeURIComponent(token)}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to delete job');
-        }
-
-        // Reload jobs
-        loadJobs();
-
-    } catch (error) {
-        console.error('Error deleting job:', error);
-        alert('Failed to delete job: ' + error.message);
-    }
 }
 
 /**
@@ -316,16 +678,19 @@ function showLoading() {
     noJobsState.classList.add('hidden');
     jobsTableContainer.classList.add('hidden');
     pagination.classList.add('hidden');
+    columnVisibility.classList.add('hidden');
 }
 
 /**
- * Show no jobs state
+ * Show no sequences state
  */
-function showNoJobs() {
+function showNoSequences() {
     loadingState.classList.add('hidden');
     noJobsState.classList.remove('hidden');
     jobsTableContainer.classList.add('hidden');
     pagination.classList.add('hidden');
+    columnVisibility.classList.add('hidden');
+    bulkActionsToolbar.classList.add('hidden');
 }
 
 /**
@@ -336,16 +701,16 @@ function showTable() {
     noJobsState.classList.add('hidden');
     jobsTableContainer.classList.remove('hidden');
     pagination.classList.remove('hidden');
+    columnVisibility.classList.remove('hidden');
+    updateBulkActionsToolbar();
 }
 
 /**
  * Escape HTML to prevent XSS
  */
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
-// Make deleteJob available globally
-window.deleteJob = deleteJob;

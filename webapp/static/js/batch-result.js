@@ -34,7 +34,6 @@ const pageButtons = document.getElementById('page-buttons');
 
 // Export links
 const exportCsv = document.getElementById('export-csv');
-const exportJson = document.getElementById('export-json');
 
 // Polling configuration
 const POLL_INTERVAL = 2000; // 2 seconds
@@ -52,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set export links
     exportCsv.href = `/api/export/${jobId}/csv`;
-    exportJson.href = `/api/export/${jobId}/json`;
 
     // Event listeners
     if (searchInput) {

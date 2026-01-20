@@ -286,3 +286,39 @@ class SequenceDetailResponse(BaseModel):
     validation_error: Optional[str] = None
     error: Optional[str] = None
     warnings: Optional[List[str]] = None
+
+
+# ============================================================================
+# Sequence-Centric History Schemas
+# ============================================================================
+
+
+class SequenceHistoryItem(BaseModel):
+    """Schema for a single sequence in history (flattened view)."""
+
+    sequence_id: str  # "seq_1", "seq_2", etc.
+    job_id: str
+    job_title: Optional[str] = None
+    created_at: datetime
+    psi: Optional[float] = None  # null if not finished or invalid
+    status: str  # "finished", "running", "queued", "failed", "invalid"
+    sequence: str  # Full 70nt sequence
+    is_batch: bool
+    batch_index: Optional[int] = None  # 0-based index for batch, null for single
+
+
+class SequenceHistoryResponse(BaseModel):
+    """Schema for paginated sequence history response."""
+
+    sequences: List[SequenceHistoryItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class SequenceExportRequest(BaseModel):
+    """Schema for bulk export request."""
+
+    items: List[Dict[str, Any]]  # List of {job_id, batch_index} items
+    columns: List[str]  # Column names to include in export

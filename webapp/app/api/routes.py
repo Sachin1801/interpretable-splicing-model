@@ -33,6 +33,9 @@ from webapp.app.api.schemas import (
     JobHistoryResponse,
     PaginatedBatchResultsResponse,
     SequenceDetailResponse,
+    SequenceHistoryItem,
+    SequenceHistoryResponse,
+    SequenceExportRequest,
     validate_single_sequence,
 )
 
@@ -437,13 +440,13 @@ async def get_example_sequences():
 @router.get("/export/{job_id}/{format}", tags=["export"])
 async def export_results(
     job_id: str,
-    format: str = Path(..., pattern="^(csv|json|tsv)$"),
+    format: str = Path(..., pattern="^(csv|tsv)$"),
     db: Session = Depends(get_db),
 ):
     """
     Export job results in the specified format.
 
-    Supported formats: csv, json, tsv
+    Supported formats: csv, tsv
     """
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
@@ -452,15 +455,7 @@ async def export_results(
     if job.status != "finished":
         raise HTTPException(status_code=400, detail="Job not yet complete")
 
-    if format == "json":
-        content = json.dumps(job.to_dict(), indent=2)
-        return Response(
-            content=content,
-            media_type="application/json",
-            headers={"Content-Disposition": f'attachment; filename="result_{job_id}.json"'}
-        )
-
-    elif format in ("csv", "tsv"):
+    if format in ("csv", "tsv"):
         delimiter = "," if format == "csv" else "\t"
 
         if job.is_batch:
@@ -725,4 +720,244 @@ async def get_sequence_detail(
         validation_error=r.get("validation_error"),
         error=r.get("error"),
         warnings=r.get("warnings"),
+    )
+
+
+@router.get("/history/sequences", response_model=SequenceHistoryResponse, tags=["history"])
+async def get_sequence_history(
+    access_token: str = Query(..., description="User access token"),
+    search: Optional[str] = Query(None, description="Search job titles or sequence content"),
+    date_from: Optional[datetime] = Query(None, description="Filter by start date"),
+    date_to: Optional[datetime] = Query(None, description="Filter by end date"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(25, ge=1, le=100, description="Results per page"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get paginated sequence history (flattened view).
+
+    Each sequence appears as its own row. Batch jobs are flattened so each
+    sequence in the batch has its own entry.
+    """
+    # Build query for jobs
+    query = db.query(Job).filter(Job.access_token == access_token)
+
+    # Apply date filters
+    if date_from:
+        query = query.filter(Job.created_at >= date_from)
+    if date_to:
+        query = query.filter(Job.created_at <= date_to)
+
+    # Order by created_at descending
+    query = query.order_by(Job.created_at.desc())
+
+    # Get all jobs (we'll flatten and paginate in memory)
+    jobs = query.all()
+
+    # Flatten jobs into sequences
+    all_sequences = []
+    for job in jobs:
+        if job.is_batch:
+            # Batch job: create an entry for each sequence
+            if job.status == "finished":
+                results = job.get_batch_results()
+                for idx, r in enumerate(results):
+                    seq_status = r.get("status", "unknown")
+                    # Map batch result status to display status
+                    if seq_status == "success":
+                        display_status = "finished"
+                    elif seq_status == "invalid":
+                        display_status = "invalid"
+                    elif seq_status == "error":
+                        display_status = "failed"
+                    else:
+                        display_status = seq_status
+
+                    all_sequences.append(SequenceHistoryItem(
+                        sequence_id=f"seq_{idx + 1}",
+                        job_id=job.id,
+                        job_title=job.job_title,
+                        created_at=job.created_at,
+                        psi=r.get("psi"),
+                        status=display_status,
+                        sequence=r.get("sequence", ""),
+                        is_batch=True,
+                        batch_index=idx,
+                    ))
+            else:
+                # Job not finished - get sequences from batch_sequences
+                batch_seqs = job.get_batch_sequences()
+                for idx, s in enumerate(batch_seqs):
+                    all_sequences.append(SequenceHistoryItem(
+                        sequence_id=f"seq_{idx + 1}",
+                        job_id=job.id,
+                        job_title=job.job_title,
+                        created_at=job.created_at,
+                        psi=None,
+                        status=job.status,
+                        sequence=s.get("sequence", ""),
+                        is_batch=True,
+                        batch_index=idx,
+                    ))
+        else:
+            # Single job: one entry
+            all_sequences.append(SequenceHistoryItem(
+                sequence_id="seq_1",
+                job_id=job.id,
+                job_title=job.job_title,
+                created_at=job.created_at,
+                psi=job.psi if job.status == "finished" else None,
+                status=job.status,
+                sequence=job.sequence or "",
+                is_batch=False,
+                batch_index=None,
+            ))
+
+    # Apply search filter (matches job_title OR sequence content)
+    if search:
+        search_lower = search.lower()
+        all_sequences = [
+            seq for seq in all_sequences
+            if (seq.job_title and search_lower in seq.job_title.lower())
+            or search_lower in seq.sequence.lower()
+        ]
+
+    # Get total count after filtering
+    total = len(all_sequences)
+
+    # Paginate
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    paginated = all_sequences[start_idx:end_idx]
+
+    total_pages = ceil(total / page_size) if total > 0 else 1
+
+    return SequenceHistoryResponse(
+        sequences=paginated,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
+
+
+@router.post("/sequences/export", tags=["history"])
+async def export_sequences(
+    request: SequenceExportRequest,
+    access_token: str = Query(..., description="User access token"),
+    db: Session = Depends(get_db),
+):
+    """
+    Export selected sequences as CSV.
+
+    Accepts a list of {job_id, batch_index} items and column names to include.
+    batch_index should be null for single-sequence jobs.
+    """
+    if not request.items:
+        raise HTTPException(status_code=400, detail="No items to export")
+
+    if not request.columns:
+        raise HTTPException(status_code=400, detail="No columns specified")
+
+    # Collect unique job IDs
+    job_ids = list(set(item.get("job_id") for item in request.items if item.get("job_id")))
+
+    # Fetch jobs
+    jobs = db.query(Job).filter(
+        Job.id.in_(job_ids),
+        Job.access_token == access_token
+    ).all()
+
+    job_map = {job.id: job for job in jobs}
+
+    # Build CSV rows
+    rows = []
+    for item in request.items:
+        job_id = item.get("job_id")
+        batch_index = item.get("batch_index")
+
+        job = job_map.get(job_id)
+        if not job:
+            continue
+
+        # Get sequence data
+        if job.is_batch and batch_index is not None:
+            if job.status == "finished":
+                results = job.get_batch_results()
+                if batch_index < len(results):
+                    r = results[batch_index]
+                    seq_data = {
+                        "sequence_id": f"seq_{batch_index + 1}",
+                        "job_id": job.id,
+                        "job_title": job.job_title or "",
+                        "created_at": job.created_at.isoformat(),
+                        "sequence": r.get("sequence", ""),
+                        "psi": str(r.get("psi", "")) if r.get("psi") is not None else "",
+                        "status": r.get("status", ""),
+                        "interpretation": r.get("interpretation", "") or "",
+                        "structure": r.get("structure", "") or "",
+                        "mfe": str(r.get("mfe", "")) if r.get("mfe") is not None else "",
+                    }
+                    rows.append(seq_data)
+            else:
+                batch_seqs = job.get_batch_sequences()
+                if batch_index < len(batch_seqs):
+                    s = batch_seqs[batch_index]
+                    seq_data = {
+                        "sequence_id": f"seq_{batch_index + 1}",
+                        "job_id": job.id,
+                        "job_title": job.job_title or "",
+                        "created_at": job.created_at.isoformat(),
+                        "sequence": s.get("sequence", ""),
+                        "psi": "",
+                        "status": job.status,
+                        "interpretation": "",
+                        "structure": "",
+                        "mfe": "",
+                    }
+                    rows.append(seq_data)
+        else:
+            # Single sequence job
+            seq_data = {
+                "sequence_id": "seq_1",
+                "job_id": job.id,
+                "job_title": job.job_title or "",
+                "created_at": job.created_at.isoformat(),
+                "sequence": job.sequence or "",
+                "psi": str(job.psi) if job.psi is not None else "",
+                "status": job.status,
+                "interpretation": job.interpretation or "",
+                "structure": job.structure or "",
+                "mfe": str(job.mfe) if job.mfe is not None else "",
+            }
+            rows.append(seq_data)
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="No valid sequences found to export")
+
+    # Build CSV content
+    # Filter columns to only include requested ones
+    valid_columns = ["sequence_id", "job_id", "job_title", "created_at", "sequence", "psi", "status", "interpretation", "structure", "mfe"]
+    columns = [c for c in request.columns if c in valid_columns]
+
+    if not columns:
+        raise HTTPException(status_code=400, detail="No valid columns specified")
+
+    csv_lines = [",".join(columns)]
+    for row in rows:
+        values = []
+        for col in columns:
+            val = str(row.get(col, ""))
+            # Escape quotes and wrap in quotes if contains comma or quotes
+            if "," in val or '"' in val or "\n" in val:
+                val = '"' + val.replace('"', '""') + '"'
+            values.append(val)
+        csv_lines.append(",".join(values))
+
+    content = "\n".join(csv_lines)
+
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="sequences_export.csv"'}
     )
