@@ -17,12 +17,6 @@
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium text-blue-900">Access Token:</span>
                 <code id="token-display" class="bg-white px-3 py-1 rounded border border-blue-200 text-sm font-mono text-blue-800"></code>
-                <button type="button" id="token-copy-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    Copy
-                </button>
-                <button type="button" id="token-edit-btn" class="text-gray-600 hover:text-gray-800 text-sm font-medium">
-                    Edit
-                </button>
             </div>
             <button type="button" id="refresh-btn" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -30,21 +24,6 @@
                 </svg>
                 Refresh
             </button>
-        </div>
-    </div>
-
-    <!-- Token Edit Modal -->
-    <div id="token-edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Access Token</h3>
-            <p class="text-sm text-gray-600 mb-4">
-                Enter a different token to view jobs from another device or session.
-            </p>
-            <input type="text" id="token-edit-input" class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm mb-4" placeholder="tok_xxxxxxxxxxxx">
-            <div class="flex justify-end gap-3">
-                <button type="button" id="token-cancel-btn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
-                <button type="button" id="token-save-btn" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">Load Jobs</button>
-            </div>
         </div>
     </div>
 

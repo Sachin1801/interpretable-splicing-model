@@ -75,26 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Setup custom token save handler for history page
-    const tokenSaveBtn = document.getElementById('token-save-btn');
-    if (tokenSaveBtn) {
-        tokenSaveBtn.addEventListener('click', () => {
-            const editInput = document.getElementById('token-edit-input');
-            const newToken = editInput.value.trim();
-            if (TokenManager.setToken(newToken)) {
-                if (tokenDisplay) {
-                    tokenDisplay.textContent = newToken;
-                }
-                document.getElementById('token-edit-modal').classList.add('hidden');
-                selectedItems.clear();
-                updateBulkActionsToolbar();
-                loadSequences();
-            } else {
-                alert('Invalid token format. Token must be in format: tok_xxxxxxxxxxxx');
-            }
-        });
-    }
-
     // Select all checkbox
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', (e) => {
@@ -295,7 +275,17 @@ function renderSequences(sequences) {
                        data-key="${escapeHtml(key)}"
                        ${isSelected ? 'checked' : ''}>
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(seq.sequence_id)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 group">
+                ${seq.is_batch && seq.batch_index !== null
+                    ? `<span class="editable-name cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded inline-flex items-center gap-1"
+                             onclick="event.stopPropagation(); startEditHistoryName(this, '${seq.job_id}', ${seq.batch_index}, '${escapeHtml(seq.sequence_id).replace(/'/g, "\\'")}')">
+                         ${escapeHtml(seq.sequence_id)}
+                         <svg class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                         </svg>
+                       </span>`
+                    : escapeHtml(seq.sequence_id)}
+            </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-primary-600 hover:text-primary-800">
                 ${escapeHtml(seq.job_title || seq.job_id.substring(0, 8))}
             </td>
@@ -714,3 +704,103 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ============================================================================
+// Inline Name Editing for Batch Sequences
+// ============================================================================
+
+function startEditHistoryName(element, jobId, batchIndex, currentName) {
+    if (element.querySelector('input')) return;
+
+    element.innerHTML = `
+        <input type="text"
+               class="w-full px-2 py-1 text-sm border border-primary-500 rounded focus:ring-2 focus:ring-primary-500 focus:outline-none"
+               value="${escapeHtml(currentName)}"
+               maxlength="255"
+               onclick="event.stopPropagation()"
+               onkeydown="handleHistoryEditKeydown(event, this, '${jobId}', ${batchIndex}, '${escapeHtml(currentName).replace(/'/g, "\\'")}')"
+               onblur="handleHistoryEditBlur(this, '${jobId}', ${batchIndex}, '${escapeHtml(currentName).replace(/'/g, "\\'")}')">
+    `;
+
+    const input = element.querySelector('input');
+    input.focus();
+    input.select();
+}
+
+function handleHistoryEditKeydown(event, input, jobId, batchIndex, originalName) {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        saveHistoryName(input, jobId, batchIndex, originalName);
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelHistoryEdit(input, jobId, batchIndex, originalName);
+    }
+}
+
+function handleHistoryEditBlur(input, jobId, batchIndex, originalName) {
+    const newName = input.value.trim();
+    if (!newName || newName === originalName) {
+        cancelHistoryEdit(input, jobId, batchIndex, originalName);
+    } else {
+        saveHistoryName(input, jobId, batchIndex, originalName);
+    }
+}
+
+async function saveHistoryName(input, jobId, batchIndex, originalName) {
+    const newName = input.value.trim();
+    const parent = input.parentElement;
+
+    if (!newName || newName === originalName) {
+        cancelHistoryEdit(input, jobId, batchIndex, originalName);
+        return;
+    }
+
+    input.disabled = true;
+    input.classList.add('opacity-50');
+
+    try {
+        const response = await fetch(`/api/batch/${jobId}/sequence/${batchIndex}/name`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save');
+        }
+
+        restoreHistoryNameDisplay(parent, jobId, batchIndex, newName);
+        parent.classList.add('bg-green-100');
+        setTimeout(() => parent.classList.remove('bg-green-100'), 1000);
+
+    } catch (error) {
+        console.error('Error saving name:', error);
+        alert('Failed to save name: ' + error.message);
+        input.disabled = false;
+        input.classList.remove('opacity-50');
+        input.focus();
+    }
+}
+
+function cancelHistoryEdit(input, jobId, batchIndex, originalName) {
+    restoreHistoryNameDisplay(input.parentElement, jobId, batchIndex, originalName);
+}
+
+function restoreHistoryNameDisplay(parent, jobId, batchIndex, name) {
+    parent.innerHTML = `
+        <span class="editable-name cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded inline-flex items-center gap-1 group"
+              onclick="event.stopPropagation(); startEditHistoryName(this, '${jobId}', ${batchIndex}, '${escapeHtml(name).replace(/'/g, "\\'")}')">
+            ${escapeHtml(name)}
+            <svg class="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+        </span>
+    `;
+}
+
+// Export functions globally
+window.startEditHistoryName = startEditHistoryName;
+window.handleHistoryEditKeydown = handleHistoryEditKeydown;
+window.handleHistoryEditBlur = handleHistoryEditBlur;
