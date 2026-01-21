@@ -322,3 +322,31 @@ class SequenceExportRequest(BaseModel):
 
     items: List[Dict[str, Any]]  # List of {job_id, batch_index} items
     columns: List[str]  # Column names to include in export
+
+
+# ============================================================================
+# Sequence Name Update Schemas
+# ============================================================================
+
+
+class SequenceNameUpdateRequest(BaseModel):
+    """Schema for updating a sequence name."""
+
+    name: str = Field(..., min_length=1, max_length=255)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Name cannot be empty")
+        return v
+
+
+class SequenceNameUpdateResponse(BaseModel):
+    """Schema for sequence name update response."""
+
+    job_id: str
+    index: int
+    old_name: str
+    new_name: str

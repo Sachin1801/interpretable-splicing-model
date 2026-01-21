@@ -36,6 +36,8 @@ from webapp.app.api.schemas import (
     SequenceHistoryItem,
     SequenceHistoryResponse,
     SequenceExportRequest,
+    SequenceNameUpdateRequest,
+    SequenceNameUpdateResponse,
     validate_single_sequence,
 )
 
@@ -723,6 +725,45 @@ async def get_sequence_detail(
     )
 
 
+@router.patch("/batch/{job_id}/sequence/{index}/name", response_model=SequenceNameUpdateResponse, tags=["results"])
+async def update_sequence_name(
+    job_id: str,
+    index: int = Path(..., ge=0, description="Sequence index (0-based)"),
+    request: SequenceNameUpdateRequest = None,
+    db: Session = Depends(get_db),
+):
+    """Update the name of a specific sequence in a batch job."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not job.is_batch:
+        raise HTTPException(status_code=400, detail="Not a batch job")
+
+    if job.status != "finished":
+        raise HTTPException(status_code=400, detail="Job not finished")
+
+    batch_results = job.get_batch_results()
+    if index >= len(batch_results):
+        raise HTTPException(status_code=400, detail=f"Index {index} out of range")
+
+    old_name = batch_results[index].get("name", f"Seq_{index+1}")
+    batch_results[index]["name"] = request.name
+    job.set_batch_results(batch_results)
+
+    # Also update batch_sequences if exists
+    batch_sequences = job.get_batch_sequences()
+    if index < len(batch_sequences):
+        batch_sequences[index]["name"] = request.name
+        job.set_batch_sequences(batch_sequences)
+
+    db.commit()
+
+    return SequenceNameUpdateResponse(
+        job_id=job.id, index=index, old_name=old_name, new_name=request.name
+    )
+
+
 @router.get("/history/sequences", response_model=SequenceHistoryResponse, tags=["history"])
 async def get_sequence_history(
     access_token: str = Query(..., description="User access token"),
@@ -774,7 +815,7 @@ async def get_sequence_history(
                         display_status = seq_status
 
                     all_sequences.append(SequenceHistoryItem(
-                        sequence_id=f"seq_{idx + 1}",
+                        sequence_id=r.get("name", f"Seq_{idx + 1}"),
                         job_id=job.id,
                         job_title=job.job_title,
                         created_at=job.created_at,
@@ -789,7 +830,7 @@ async def get_sequence_history(
                 batch_seqs = job.get_batch_sequences()
                 for idx, s in enumerate(batch_seqs):
                     all_sequences.append(SequenceHistoryItem(
-                        sequence_id=f"seq_{idx + 1}",
+                        sequence_id=s.get("name", f"Seq_{idx + 1}"),
                         job_id=job.id,
                         job_title=job.job_title,
                         created_at=job.created_at,
