@@ -275,6 +275,9 @@ function renderSequences(sequences) {
                        data-key="${escapeHtml(key)}"
                        ${isSelected ? 'checked' : ''}>
             </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-primary-600 hover:text-primary-800">
+                ${escapeHtml(seq.job_title || seq.job_id.substring(0, 8))}
+            </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 group">
                 ${seq.is_batch && seq.batch_index !== null
                     ? `<span class="editable-name cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded inline-flex items-center gap-1"
@@ -285,9 +288,6 @@ function renderSequences(sequences) {
                          </svg>
                        </span>`
                     : escapeHtml(seq.sequence_id)}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-primary-600 hover:text-primary-800">
-                ${escapeHtml(seq.job_title || seq.job_id.substring(0, 8))}
             </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${date}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm font-mono ${seq.psi !== null ? 'text-gray-900' : 'text-gray-400'}">${psiDisplay}</td>
@@ -454,8 +454,7 @@ async function exportSelected() {
     // Gather selected columns
     const columns = ['sequence_id']; // Always included
     const columnCheckboxes = [
-        'job_title', 'created_at', 'psi', 'status', 'sequence',
-        'interpretation', 'structure', 'mfe'
+        'job_title', 'created_at', 'psi', 'status', 'sequence'
     ];
 
     for (const col of columnCheckboxes) {
@@ -589,14 +588,15 @@ async function deleteSelected() {
  * Get status badge HTML
  */
 function getStatusBadge(status) {
-    const badges = {
-        'finished': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>',
-        'running': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Running</span>',
-        'queued': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Queued</span>',
-        'failed': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>',
-        'invalid': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Invalid</span>'
+    const labels = {
+        'finished': 'Completed',
+        'running': 'Running',
+        'queued': 'Queued',
+        'failed': 'Failed',
+        'invalid': 'Invalid'
     };
-    return badges[status] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${escapeHtml(status)}</span>`;
+    const label = labels[status] || status;
+    return `<span class="text-sm text-gray-900">${escapeHtml(label)}</span>`;
 }
 
 /**
