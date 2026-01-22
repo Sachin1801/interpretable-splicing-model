@@ -122,8 +122,14 @@ app.include_router(api_router, prefix="/api", tags=["api"])
 # HTML page routes
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def home(request: Request):
-    """Render the home page."""
-    return templates.TemplateResponse("index.html", {"request": request, "settings": settings})
+    """Render the landing page."""
+    return templates.TemplateResponse("landing.html", {"request": request, "settings": settings})
+
+
+@app.get("/input", response_class=HTMLResponse, include_in_schema=False)
+async def input_page(request: Request):
+    """Render the input page for splicing prediction."""
+    return templates.TemplateResponse("input.html", {"request": request, "settings": settings})
 
 
 @app.get("/result/{job_id}", response_class=HTMLResponse, include_in_schema=False)
