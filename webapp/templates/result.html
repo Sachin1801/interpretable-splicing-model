@@ -91,12 +91,12 @@
                 </button>
             </div>
             <div id="silhouette-content" class="p-6">
-                <div id="silhouette-container" class="w-full" style="min-height: 650px;">
+                <div id="silhouette-container" class="w-full" style="min-height: 488px;">
                     <iframe
                         id="silhouette-iframe"
                         src="/shiny/silhouette/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                         class="w-full border-0"
-                        style="height: 650px; min-height: 600px;"
+                        style="height: 488px; min-height: 450px;"
                         loading="lazy"
                         title="Silhouette View"
                     ></iframe>
@@ -125,12 +125,12 @@
                 </button>
             </div>
             <div id="heatmap-content" class="p-6">
-                <div id="heatmap-container" class="w-full" style="min-height: 900px;">
+                <div id="heatmap-container" class="w-full" style="min-height: 675px;">
                     <iframe
                         id="heatmap-iframe"
                         src="/shiny/heatmap/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                         class="w-full border-0"
-                        style="height: 900px; min-height: 850px;"
+                        style="height: 675px; min-height: 638px;"
                         loading="lazy"
                         title="Filter Activation Heatmap"
                     ></iframe>
