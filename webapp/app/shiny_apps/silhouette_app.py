@@ -114,18 +114,28 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 });
             """),
             ui.tags.style("""
+                html, body {
+                    height: 100%;
+                    margin: 0;
+                }
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     background: #f9fafb;
-                    margin: 0;
                     padding: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-sizing: border-box;
+                }
+                .container-fluid {
+                    width: 100%;
                 }
                 .filter-panel {
                     background: white;
                     border-radius: 8px;
                     padding: 16px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    max-height: 400px;
+                    max-height: 413px;
                     overflow-y: auto;
                 }
                 .filter-section h4 {
@@ -358,7 +368,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             x = np.arange(L)
             bases = list(full_seq)
 
-            fig, ax = plt.subplots(figsize=(28, 8))
+            fig, ax = plt.subplots(figsize=(21, 6))
 
             ax.bar(x, incl_total, width=1, color="#bed2fd", label="Inclusion")
             ax.bar(x, -skip_total, width=1, color="#f0a5a5", label="Skipping")

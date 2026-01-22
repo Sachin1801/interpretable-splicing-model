@@ -420,8 +420,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     )
 
             fig.update_layout(
-                height=max(850, 24 * len(filters_rev) + 250),
-                width=1400,
+                height=max(638, 18 * len(filters_rev) + 188),
+                width=1050,
                 margin=dict(l=130, r=20, t=80, b=30),
                 xaxis=dict(
                     side="top",
