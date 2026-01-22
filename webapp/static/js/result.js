@@ -93,7 +93,19 @@ function displayResults(data) {
     sequenceEl.textContent = data.sequence || 'N/A';
 
     // Force plot
-    if (data.force_plot && data.force_plot.length > 0) {
+    if (data.force_plot_data && data.force_plot_data.activations) {
+        const activations = data.force_plot_data.activations;
+        // Combine qc_incl and qc_skip to get position-wise contribution
+        // Positive = promotes inclusion (green), Negative = promotes skipping (red)
+        if (activations.qc_incl && activations.qc_skip) {
+            const forceData = activations.qc_incl.map((incl, i) => {
+                const skip = activations.qc_skip[i] || 0;
+                return incl - skip;
+            });
+            createForcePlot(forceData);
+        }
+    } else if (data.force_plot && data.force_plot.length > 0) {
+        // Fallback for legacy format
         createForcePlot(data.force_plot);
     }
 }

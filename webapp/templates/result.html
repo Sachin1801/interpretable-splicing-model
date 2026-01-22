@@ -3,7 +3,7 @@
 {% block title %}Prediction Result - {{ settings.app_name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+<div class="max-w-[1920px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <!-- Header -->
     <div class="mb-6">
         <nav class="flex" aria-label="Breadcrumb">
@@ -70,34 +70,71 @@
             <p id="sequence" class="font-mono text-sm break-all text-gray-900 bg-gray-50 p-3 rounded"></p>
         </div>
 
-        <!-- Force Plot -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-                Position-wise Contribution to PSI
-                <span class="ml-2 text-gray-400 font-normal normal-case">
-                    (green = promotes inclusion, red = promotes skipping)
-                </span>
-            </h3>
-            <div id="force-plot" class="w-full" style="height: 400px;"></div>
+        <!-- Silhouette View -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between cursor-pointer" onclick="toggleSection('silhouette')">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                        Silhouette View
+                        <span class="ml-2 text-gray-400 font-normal normal-case">
+                            (blue = inclusion strength, red = skipping strength per position)
+                        </span>
+                    </h3>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="silhouette-toggle">
+                    <svg id="silhouette-chevron-down" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <svg id="silhouette-chevron-up" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+            </div>
+            <div id="silhouette-content" class="p-6">
+                <div id="silhouette-container" class="w-full" style="min-height: 650px;">
+                    <iframe
+                        id="silhouette-iframe"
+                        src="/shiny/silhouette/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        class="w-full border-0"
+                        style="height: 650px; min-height: 600px;"
+                        loading="lazy"
+                        title="Silhouette View"
+                    ></iframe>
+                </div>
+            </div>
         </div>
 
         <!-- Filter Activation Heatmap -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-                Filter Activation Heatmap
-                <span class="ml-2 text-gray-400 font-normal normal-case">
-                    (shows where each neural network filter activates across the sequence)
-                </span>
-            </h3>
-            <div id="heatmap-container" class="w-full" style="min-height: 500px;">
-                <iframe
-                    id="heatmap-iframe"
-                    src="/shiny/heatmap/?job_id={{ job_id }}"
-                    class="w-full border-0"
-                    style="height: 600px; min-height: 500px;"
-                    loading="lazy"
-                    title="Filter Activation Heatmap"
-                ></iframe>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between cursor-pointer" onclick="toggleSection('heatmap')">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                        Filter Activation Heatmap
+                        <span class="ml-2 text-gray-400 font-normal normal-case">
+                            (blue = inclusion, red = skipping, with filter icons)
+                        </span>
+                    </h3>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="heatmap-toggle">
+                    <svg id="heatmap-chevron-down" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <svg id="heatmap-chevron-up" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+            </div>
+            <div id="heatmap-content" class="p-6">
+                <div id="heatmap-container" class="w-full" style="min-height: 900px;">
+                    <iframe
+                        id="heatmap-iframe"
+                        src="/shiny/heatmap/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        class="w-full border-0"
+                        style="height: 900px; min-height: 850px;"
+                        loading="lazy"
+                        title="Filter Activation Heatmap"
+                    ></iframe>
+                </div>
             </div>
         </div>
 
@@ -144,6 +181,69 @@
 <script>
     const jobId = "{{ job_id }}";
     const batchIndex = {{ batch_index if batch_index is defined and batch_index is not none else 'null' }};
+
+    // Toggle collapsible sections
+    function toggleSection(section) {
+        const content = document.getElementById(section + '-content');
+        const chevronDown = document.getElementById(section + '-chevron-down');
+        const chevronUp = document.getElementById(section + '-chevron-up');
+
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            chevronDown.classList.remove('hidden');
+            chevronUp.classList.add('hidden');
+        } else {
+            content.classList.add('hidden');
+            chevronDown.classList.add('hidden');
+            chevronUp.classList.remove('hidden');
+        }
+    }
+
+    // Send params to PyShiny iframes via postMessage
+    function sendParamsToIframe(iframe) {
+        if (iframe && iframe.contentWindow) {
+            console.log('[Result] Sending params to iframe:', jobId, batchIndex);
+            iframe.contentWindow.postMessage({
+                type: 'setParams',
+                job_id: jobId,
+                batch_index: batchIndex
+            }, '*');
+        }
+    }
+
+    // Listen for 'ready' message from iframes
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'ready') {
+            console.log('[Result] Received ready from:', event.data.source);
+            // Send params back to the iframe that signaled ready
+            if (event.source) {
+                event.source.postMessage({
+                    type: 'setParams',
+                    job_id: jobId,
+                    batch_index: batchIndex
+                }, '*');
+            }
+        }
+    });
+
+    // Also send on iframe load (backup)
+    document.addEventListener('DOMContentLoaded', function() {
+        const silhouetteIframe = document.getElementById('silhouette-iframe');
+        const heatmapIframe = document.getElementById('heatmap-iframe');
+
+        if (silhouetteIframe) {
+            silhouetteIframe.onload = function() {
+                // Small delay to ensure Shiny is ready
+                setTimeout(function() { sendParamsToIframe(silhouetteIframe); }, 500);
+            };
+        }
+        if (heatmapIframe) {
+            heatmapIframe.onload = function() {
+                // Small delay to ensure Shiny is ready
+                setTimeout(function() { sendParamsToIframe(heatmapIframe); }, 500);
+            };
+        }
+    });
 </script>
 <script src="/static/js/result.js"></script>
 {% endblock %}

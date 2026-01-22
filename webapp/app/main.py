@@ -14,15 +14,16 @@ from webapp.app.database import init_db, get_db
 from webapp.app.api.routes import router as api_router
 from webapp.app.models.job import Job
 
-# PyShiny imports for heatmap visualization
+# PyShiny imports for visualizations
 try:
     from shiny import App
     from webapp.app.shiny_apps.heatmap_app import create_app as create_heatmap_app
+    from webapp.app.shiny_apps.silhouette_app import create_app as create_silhouette_app
     SHINY_AVAILABLE = True
 except ImportError:
     SHINY_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("PyShiny not available - heatmap visualization will be disabled")
+    logger.warning("PyShiny not available - visualizations will be disabled")
 
 # Configure logging
 logging.basicConfig(
@@ -102,7 +103,7 @@ static_path = Path(__file__).parent.parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
-# Mount PyShiny heatmap app
+# Mount PyShiny visualization apps
 if SHINY_AVAILABLE:
     try:
         heatmap_shiny_app = create_heatmap_app(api_base_url="http://localhost:8000")
@@ -110,6 +111,13 @@ if SHINY_AVAILABLE:
         logger.info("PyShiny heatmap app mounted at /shiny/heatmap")
     except Exception as e:
         logger.error(f"Failed to mount PyShiny heatmap app: {e}")
+
+    try:
+        silhouette_shiny_app = create_silhouette_app(api_base_url="http://localhost:8000")
+        app.mount("/shiny/silhouette", silhouette_shiny_app, name="shiny_silhouette")
+        logger.info("PyShiny silhouette app mounted at /shiny/silhouette")
+    except Exception as e:
+        logger.error(f"Failed to mount PyShiny silhouette app: {e}")
 
 # Set up templates
 templates_path = Path(__file__).parent.parent / "templates"
