@@ -60,6 +60,9 @@
                         <a href="/" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/' %}text-primary-600 bg-primary-50{% endif %}">
                             Home
                         </a>
+                        <a href="/input" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/input' %}text-primary-600 bg-primary-50{% endif %}">
+                            Predict
+                        </a>
                         <a href="/about" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/about' %}text-primary-600 bg-primary-50{% endif %}">
                             About
                         </a>
@@ -95,6 +98,7 @@
             <div class="hidden md:hidden" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Home</a>
+                    <a href="/input" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Predict</a>
                     <a href="/about" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">About</a>
                     <a href="/methodology" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Methodology</a>
                     <a href="/help" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Help</a>
