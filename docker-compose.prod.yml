@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  webapp:
+    image: ${REGISTRY_URL}/splicing-model:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"  # Only localhost, Apache proxies
+    volumes:
+      - splicing-db:/app/data/db
+    environment:
+      - DEBUG=false
+    env_file:
+      - .env.production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  splicing-db:
+    external: true  # Create manually: docker volume create splicing-db
