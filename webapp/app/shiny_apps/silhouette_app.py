@@ -1,15 +1,43 @@
-"""PyShiny app for Filter × Position heatmap visualization.
+"""PyShiny app for Silhouette View visualization.
 
-Shows collapsed filter activations with:
-- Diverging colorscale (red = skipping, white = 0, blue = inclusion)
-- Filter icons positioned next to y-axis labels
-- Signed matrix (positive for inclusion, negative for skipping)
+Shows per-position inclusion/skipping strengths as a bar chart.
+Blue bars (upward) = Inclusion strength
+Red bars (downward) = Skipping strength
 """
 
 from shiny import App, ui, render, reactive
-import plotly.graph_objects as go
-import httpx
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import numpy as np
+import httpx
+
+
+def parse_total_position_strengths(nucleotide_activations_children, L):
+    """
+    Parse total position strengths from nucleotide activations.
+
+    Args:
+        nucleotide_activations_children: result["nucleotide_activations"]["children"]
+        L: sequence length
+
+    Returns:
+        (incl_total, skip_total) arrays of shape (L,)
+    """
+    def side_to_total(side_node):
+        total = np.zeros(L, dtype=float)
+        for pos_node in side_node.get("children", []):
+            pos = int(pos_node["name"].split("_")[1]) - 1
+            s = 0.0
+            for feat_node in pos_node.get("children", []):
+                for leaf in feat_node.get("children", []):
+                    s += float(leaf.get("strength", 0.0))
+            total[pos] = s
+        return total
+
+    incl_node = nucleotide_activations_children[0]
+    skip_node = nucleotide_activations_children[1]
+    return side_to_total(incl_node), side_to_total(skip_node)
 
 
 def list_all_filters_collapsed(children):
@@ -30,54 +58,34 @@ def list_all_filters_collapsed(children):
     return out
 
 
-def build_signed_filter_matrix_collapsed(children, L, filter_names):
-    """
-    Build a signed activation matrix.
+def position_totals_for_selected_filters(nucleotide_activations_children, L, selected):
+    """Calculate position totals for only selected filters."""
+    selected = set(selected)
+    expand_skip_struct = "skip_struct_ALL" in selected
 
-    M[row, pos]:
-      + strength for inclusion-side features
-      - strength for skipping-side features
-
-    Also collapses skip_struct_* into skip_struct_ALL.
-    """
-    name_to_row = {name: i for i, name in enumerate(filter_names)}
-    M = np.zeros((len(filter_names), L), dtype=float)
-
-    incl_node = children[0]
-    skip_node = children[1]
-
-    def add_side(side_node, sign):
+    def side_to_total(side_node):
+        total = np.zeros(L, dtype=float)
         for pos_node in side_node.get("children", []):
             pos = int(pos_node["name"].split("_")[1]) - 1
+            s = 0.0
             for feat_node in pos_node.get("children", []):
-                fname = feat_node["name"]
-
-                # Collapse skip_struct_* into skip_struct_ALL
-                if fname.startswith("skip_struct_") and "skip_struct_ALL" in name_to_row:
-                    row = name_to_row["skip_struct_ALL"]
-                else:
-                    if fname not in name_to_row:
-                        continue
-                    row = name_to_row[fname]
-
-                s = 0.0
+                name = feat_node["name"]
+                is_skip_struct = name.startswith("skip_struct_")
+                take = (name in selected) or (expand_skip_struct and is_skip_struct)
+                if not take:
+                    continue
                 for leaf in feat_node.get("children", []):
                     s += float(leaf.get("strength", 0.0))
+            total[pos] = s
+        return total
 
-                M[row, pos] += sign * s
-
-    add_side(incl_node, +1.0)
-    add_side(skip_node, -1.0)
-    return M
-
-
-def filter_to_icon_url(filter_name: str) -> str:
-    """Get URL for filter icon image."""
-    return f"/static/filters/{filter_name}.png"
+    incl_node = nucleotide_activations_children[0]
+    skip_node = nucleotide_activations_children[1]
+    return side_to_total(incl_node), side_to_total(skip_node)
 
 
 def create_app(api_base_url: str = "http://localhost:8000"):
-    """Create the PyShiny heatmap app."""
+    """Create the PyShiny silhouette app."""
 
     app_ui = ui.page_fluid(
         ui.head_content(
@@ -85,7 +93,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 // Listen for postMessage from parent window
                 window.addEventListener('message', function(event) {
                     if (event.data && event.data.type === 'setParams') {
-                        console.log('[Heatmap] Received params via postMessage:', event.data);
+                        console.log('[Silhouette] Received params via postMessage:', event.data);
                         // Wait for Shiny to be ready, then set input values
                         if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {
                             Shiny.setInputValue('pm_job_id', event.data.job_id);
@@ -101,8 +109,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 });
                 // Request params from parent when Shiny is ready
                 document.addEventListener('shiny:connected', function() {
-                    console.log('[Heatmap] Shiny connected, requesting params from parent');
-                    window.parent.postMessage({type: 'ready', source: 'heatmap'}, '*');
+                    console.log('[Silhouette] Shiny connected, requesting params from parent');
+                    window.parent.postMessage({type: 'ready', source: 'silhouette'}, '*');
                 });
             """),
             ui.tags.style("""
@@ -117,7 +125,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     border-radius: 8px;
                     padding: 16px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    max-height: 600px;
+                    max-height: 400px;
                     overflow-y: auto;
                 }
                 .filter-section h4 {
@@ -128,7 +136,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 .filter-section {
                     margin-bottom: 16px;
                 }
-                .heatmap-container {
+                .plot-container {
                     background: white;
                     border-radius: 8px;
                     padding: 16px;
@@ -151,8 +159,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 3,
                 ui.div(
                     {"class": "filter-panel"},
-                    ui.h4("Filter × Position Heatmap"),
-                    ui.p("Blue = Inclusion, Red = Skipping",
+                    ui.h4("Filter Selection"),
+                    ui.p("Select which filters contribute to the silhouette view:",
                          style="font-size: 12px; color: #6b7280; margin-bottom: 12px;"),
                     ui.div(
                         {"class": "filter-section"},
@@ -177,8 +185,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             ui.column(
                 9,
                 ui.div(
-                    {"class": "heatmap-container"},
-                    ui.output_ui("heatmap_plot"),
+                    {"class": "plot-container"},
+                    ui.output_ui("silhouette_plot"),
                 ),
             ),
         ),
@@ -195,7 +203,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             """Triggered when params are received via postMessage."""
             job_id = input.pm_job_id()
             batch_index = input.pm_batch_index()
-            print(f"[Heatmap] Received postMessage params: job_id={job_id}, batch_index={batch_index}", flush=True)
+            print(f"[Silhouette] Received postMessage params: job_id={job_id}, batch_index={batch_index}", flush=True)
 
             if not job_id:
                 error_message.set("Waiting for job parameters...")
@@ -294,23 +302,9 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             ui.update_checkbox_group("skip_filters", selected=[])
             ui.update_checkbox_group("struct_filters", selected=[])
 
-        @reactive.Effect
-        def trigger_initial_heatmap():
-            """Force checkbox updates when data loads to trigger heatmap rendering."""
-            data = vis_data.get()
-            if data:
-                children = data["nucleotide_activations"]["children"]
-                all_filters = list_all_filters_collapsed(children)
-                incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-                skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-                struct_filters = [f for f in all_filters if "struct" in f]
-                ui.update_checkbox_group("incl_filters", selected=incl_filters)
-                ui.update_checkbox_group("skip_filters", selected=skip_filters)
-                ui.update_checkbox_group("struct_filters", selected=struct_filters)
-
         @output
         @render.ui
-        def heatmap_plot():
+        def silhouette_plot():
             err = error_message.get()
             if err:
                 return ui.div({"class": "error-message"}, err)
@@ -319,133 +313,100 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             if not data:
                 return ui.div({"class": "loading"}, "Waiting for job parameters...")
 
-            # Get all available filters for defaults
-            children = data["nucleotide_activations"]["children"]
-            available_filters = list_all_filters_collapsed(children)
-            default_incl = [f for f in available_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-            default_skip = [f for f in available_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-            default_struct = [f for f in available_filters if "struct" in f]
-
-            # Get selected filters - default to all if inputs not yet available
-            try:
-                incl_selected = list(input.incl_filters()) if input.incl_filters() else default_incl
-            except Exception:
-                incl_selected = default_incl
-            try:
-                skip_selected = list(input.skip_filters()) if input.skip_filters() else default_skip
-            except Exception:
-                skip_selected = default_skip
-            try:
-                struct_selected = list(input.struct_filters()) if input.struct_filters() else default_struct
-            except Exception:
-                struct_selected = default_struct
-
-            all_selected = set(incl_selected + skip_selected + struct_selected)
+            # Get selected filters
+            incl_selected = list(input.incl_filters()) if input.incl_filters() else []
+            skip_selected = list(input.skip_filters()) if input.skip_filters() else []
+            struct_selected = list(input.struct_filters()) if input.struct_filters() else []
+            all_selected = incl_selected + skip_selected + struct_selected
 
             if not all_selected:
                 return ui.div(
                     {"class": "loading"},
-                    "Select at least one filter to display the heatmap."
+                    "Select at least one filter to display the silhouette view."
                 )
 
             # Extract data
             full_seq = data["sequence"]
             exon = data["exon"]
+            struct_full = data["structs"]
             L = len(full_seq)
+            children = data["nucleotide_activations"]["children"]
 
-            # Filter to only selected filters
-            filters = [f for f in available_filters if f in all_selected]
-
-            # Build signed matrix
-            M = build_signed_filter_matrix_collapsed(children, L, filters)
-
-            # Get exon boundaries for highlighting
+            # Calculate full range from all filters for fixed y-axis
+            incl_total_all, skip_total_all = parse_total_position_strengths(children, L)
             start = full_seq.find(exon.replace("U", "T"))
             if start == -1:
                 start = full_seq.upper().find(exon.upper().replace("U", "T"))
             if start == -1:
-                start = 10
+                start = 10  # Default flanking length
             end = start + len(exon)
 
-            # Setup display
-            x_pos = list(range(L))
-            x_bases = list(full_seq)
-            filters_rev = list(reversed(filters))
-            M_rev = M[::-1, :]
-
-            # Symmetric z range so 0 is white
-            zmax = float(max(np.max(np.abs(M_rev)), 1e-6))
-
-            # Create heatmap with diverging colorscale
-            fig = go.Figure(
-                data=go.Heatmap(
-                    z=M_rev,
-                    x=x_pos,
-                    y=filters_rev,
-                    zmin=-zmax,
-                    zmax=zmax,
-                    colorscale=[
-                        (0.0, "#dc2626"),   # Red for skipping
-                        (0.5, "#ffffff"),   # White for neutral
-                        (1.0, "#2563eb"),   # Blue for inclusion
-                    ],
-                    hovertemplate="Filter %{y}<br>Base %{customdata}<br>Strength %{z:.4f}<extra></extra>",
-                    customdata=np.array(x_bases)[None, :].repeat(len(filters_rev), axis=0),
-                    colorbar=dict(title="Strength<br>(+ incl, - skip)"),
-                )
+            # Get full range for y-axis
+            incl_exon_all = incl_total_all[start:end]
+            skip_exon_all = skip_total_all[start:end]
+            y_max_all = max(
+                np.max(incl_exon_all) if len(incl_exon_all) > 0 else 0,
+                np.max(skip_exon_all) if len(skip_exon_all) > 0 else 0
             )
+            y_max_all = max(y_max_all, 0.1)
+            y_min_all = -y_max_all
 
-            # Highlight exon region
-            fig.add_vrect(x0=start-0.5, x1=end-0.5, fillcolor="#d0d0d0", line_width=0, opacity=0.2)
+            # Calculate values for selected filters
+            incl_total, skip_total = position_totals_for_selected_filters(children, L, all_selected)
 
-            # Add filter icons to the left of y-axis labels
-            fig.update_layout(images=[])
-            for y in filters_rev:
-                if y != "skip_struct_ALL":
-                    fig.add_layout_image(
-                        dict(
-                            source=filter_to_icon_url(y),
-                            xref="paper",
-                            yref="y",
-                            x=-0.03,
-                            y=y,
-                            xanchor="right",
-                            yanchor="middle",
-                            sizex=0.06,
-                            sizey=0.8,
-                            sizing="contain",
-                            opacity=1.0,
-                            layer="above",
-                        )
-                    )
+            # Create plot
+            x = np.arange(L)
+            bases = list(full_seq)
 
-            fig.update_layout(
-                height=max(850, 24 * len(filters_rev) + 250),
-                width=1400,
-                margin=dict(l=130, r=20, t=80, b=30),
-                xaxis=dict(
-                    side="top",
-                    tickmode="array",
-                    tickvals=x_pos,
-                    ticktext=x_bases,
-                    tickfont=dict(size=9),
-                    showgrid=False,
-                ),
-                yaxis=dict(
-                    tickfont=dict(size=10),
-                    categoryorder="array",
-                    categoryarray=filters_rev,
-                ),
-            )
+            fig, ax = plt.subplots(figsize=(28, 8))
+
+            ax.bar(x, incl_total, width=1, color="#bed2fd", label="Inclusion")
+            ax.bar(x, -skip_total, width=1, color="#f0a5a5", label="Skipping")
+
+            # Shade exon region
+            ax.axvspan(start - 0.5, end - 0.5, color="#d0d0d0", alpha=0.15)
+            ax.axhline(0, linewidth=1, color='black')
+
+            ax.set_xticks(x)
+            ax.set_xticklabels(bases, fontsize=7)
+
+            # Add secondary structure on second x-axis
+            ax2 = ax.twiny()
+            ax2.set_xlim(ax.get_xlim())
+            ax2.xaxis.set_ticks_position("bottom")
+            ax2.xaxis.set_label_position("bottom")
+            ax2.spines["bottom"].set_position(("outward", 18))
+            ax2.spines["top"].set_visible(False)
+            ax2.spines["bottom"].set_visible(False)
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(list(struct_full), fontsize=7)
+            ax2.tick_params(axis="x", length=0, pad=2)
+
+            # Fixed symmetric limits
+            ax.set_ylim(y_min_all, y_max_all)
+
+            # Integer tick marks
+            max_tick = int(np.ceil(max(abs(y_min_all), abs(y_max_all))))
+            ticks = np.arange(-max_tick, max_tick + 1, 1)
+            ax.set_yticks(ticks)
+            ax.set_yticklabels([str(abs(t)) for t in ticks])
+
+            ax.set_title("Silhouette View - Position-wise Filter Contributions")
+            ax.set_ylabel("Strength")
+            ax.legend(loc='upper right')
+
+            plt.tight_layout()
 
             # Convert to HTML
-            html_content = fig.to_html(
-                full_html=False,
-                include_plotlyjs="cdn",
-                config={"responsive": True},
-            )
+            import io
+            import base64
+            buf = io.BytesIO()
+            fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            buf.seek(0)
+            img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+            plt.close(fig)
 
-            return ui.HTML(html_content)
+            return ui.HTML(f'<img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;" />')
 
     return App(app_ui, server)
 

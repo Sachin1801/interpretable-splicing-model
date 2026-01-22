@@ -15,6 +15,7 @@ from sqlalchemy import text, and_, or_
 from webapp.app.database import get_db
 from webapp.app.models.job import Job
 from webapp.app.services.predictor import get_predictor, SplicingPredictor
+from webapp.app.services.vis_data import get_vis_data
 from webapp.app.config import settings
 from webapp.app.api.schemas import (
     SequenceInput,
@@ -386,6 +387,45 @@ async def get_heatmap_data(
         return heatmap_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating heatmap data: {str(e)}")
+
+
+@router.get("/vis_data/{job_id}", tags=["visualization"])
+async def get_vis_data_endpoint(
+    job_id: str,
+    batch_index: Optional[int] = Query(None, description="Index of sequence in batch job (0-based)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get hierarchical visualization data for silhouette and heatmap views.
+
+    Returns collapsed filter activations organized both by feature and by position.
+    This data powers the silhouette view and the new heatmap with diverging colors.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != "finished":
+        raise HTTPException(status_code=400, detail="Job not yet complete")
+
+    # Get the appropriate sequence
+    if job.is_batch and batch_index is not None:
+        # Get specific sequence from batch
+        results = job.get_batch_results()
+        if batch_index >= len(results):
+            raise HTTPException(status_code=404, detail=f"Batch index {batch_index} not found")
+        sequence = results[batch_index].get("sequence", "")
+        if not sequence:
+            raise HTTPException(status_code=400, detail="Sequence not found in batch results")
+    else:
+        # Use the main sequence (or first sequence for batch)
+        sequence = job.sequence
+
+    try:
+        vis_data = get_vis_data(sequence)
+        return vis_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating visualization data: {str(e)}")
 
 
 @router.get("/example", response_model=ExampleSequencesResponse, tags=["examples"])
