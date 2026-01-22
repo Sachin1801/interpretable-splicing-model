@@ -48,26 +48,6 @@
 
     <!-- Results Container (hidden initially) -->
     <div id="results-container" class="hidden space-y-6">
-        <!-- Summary Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                <p class="text-sm font-medium text-gray-500">Total Sequences</p>
-                <p id="stat-total" class="mt-1 text-2xl font-bold text-gray-900">0</p>
-            </div>
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                <p class="text-sm font-medium text-gray-500">Successful</p>
-                <p id="stat-success" class="mt-1 text-2xl font-bold text-green-600">0</p>
-            </div>
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                <p class="text-sm font-medium text-gray-500">Invalid</p>
-                <p id="stat-invalid" class="mt-1 text-2xl font-bold text-red-600">0</p>
-            </div>
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                <p class="text-sm font-medium text-gray-500">Average PSI</p>
-                <p id="stat-avg-psi" class="mt-1 text-2xl font-bold text-primary-600">-</p>
-            </div>
-        </div>
-
         <!-- Search and Export -->
         <div class="flex flex-wrap gap-4 items-center justify-between">
             <div class="flex-1 min-w-[200px] max-w-md">
@@ -139,34 +119,11 @@
     </div>
 </div>
 
-<!-- Detail Modal -->
-<div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-            <h3 id="detail-title" class="text-lg font-medium text-gray-900">Sequence Details</h3>
-            <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-500">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-        <div id="detail-content" class="p-6 space-y-6">
-            <!-- Loading spinner for detail -->
-            <div id="detail-loading" class="text-center py-8">
-                <svg class="animate-spin h-8 w-8 text-primary-600 mx-auto" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-            </div>
-            <!-- Detail will be populated here -->
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     const jobId = "{{ job_id }}";
 </script>
-<script src="/static/js/batch-result.js"></script>
+<script src="/static/js/batch-result.js?v=3"></script>
 {% endblock %}
