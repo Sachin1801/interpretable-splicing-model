@@ -199,3 +199,34 @@ a:focus:not(:focus-visible) {
         scroll-behavior: auto;
     }
 }
+
+/* Sortable table header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable-header:hover {
+    background-color: #f3f4f6;
+}
+
+.sortable-header.sorted .sort-icons {
+    opacity: 1 !important;
+}
+
+.sortable-header.sorted .sort-neutral {
+    display: none;
+}
+
+.sortable-header.sorted.asc .sort-asc {
+    display: block;
+}
+
+.sortable-header.sorted.desc .sort-desc {
+    display: block;
+}
+
+/* Filter panel chevron rotation */
+#filter-chevron.rotate-180 {
+    transform: rotate(180deg);
+}

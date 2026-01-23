@@ -8,13 +8,20 @@ let pageSize = 25;
 let totalSequences = 0;
 let totalPages = 1;
 let currentFilters = {
-    search: '',
+    jobTitle: '',
+    sequenceId: '',
+    sequence: '',
     dateFrom: null,
-    dateTo: null
+    dateTo: null,
+    psiOperator: '',
+    psiValue: null,
+    psiValue2: null
 };
+let filterPanelOpen = false;
 let allSequences = [];  // Current page data
 let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: sequence object
 let showSequenceColumn = false;
+let currentSort = { column: 'created_at', order: 'desc' };
 
 // DOM Elements
 const tokenDisplay = document.getElementById('token-display');
@@ -27,9 +34,20 @@ const pageStart = document.getElementById('page-start');
 const pageEnd = document.getElementById('page-end');
 const totalJobsEl = document.getElementById('total-jobs');
 const pageButtons = document.getElementById('page-buttons');
-const searchInput = document.getElementById('search-title');
-const dateFromInput = document.getElementById('date-from');
-const dateToInput = document.getElementById('date-to');
+// Filter panel elements
+const filterToggleBtn = document.getElementById('filter-toggle-btn');
+const filterPanel = document.getElementById('filter-panel');
+const filterChevron = document.getElementById('filter-chevron');
+const activeFilterCount = document.getElementById('active-filter-count');
+const filterJobTitle = document.getElementById('filter-job-title');
+const filterSequenceId = document.getElementById('filter-sequence-id');
+const filterSequence = document.getElementById('filter-sequence');
+const filterDateFrom = document.getElementById('filter-date-from');
+const filterDateTo = document.getElementById('filter-date-to');
+const filterPsiOperator = document.getElementById('filter-psi-operator');
+const filterPsiValue = document.getElementById('filter-psi-value');
+const filterPsiValue2 = document.getElementById('filter-psi-value2');
+const filterPsiValue2Container = document.getElementById('filter-psi-value2-container');
 const applyFiltersBtn = document.getElementById('apply-filters-btn');
 const clearFiltersBtn = document.getElementById('clear-filters-btn');
 const refreshBtn = document.getElementById('refresh-btn');
@@ -66,14 +84,30 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshBtn.addEventListener('click', () => loadSequences());
     }
 
-    // Search on Enter
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
+    // Filter panel toggle
+    if (filterToggleBtn) {
+        filterToggleBtn.addEventListener('click', toggleFilterPanel);
+    }
+
+    // PSI operator change handler - show/hide second value for "between"
+    if (filterPsiOperator) {
+        filterPsiOperator.addEventListener('change', () => {
+            const isBetween = filterPsiOperator.value === 'between';
+            filterPsiValue2Container.classList.toggle('hidden', !isBetween);
         });
     }
+
+    // Apply filters on Enter key in any filter input
+    const filterInputs = [filterJobTitle, filterSequenceId, filterSequence, filterPsiValue, filterPsiValue2];
+    filterInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+        }
+    });
 
     // Select all checkbox
     if (selectAllCheckbox) {
@@ -87,17 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Bulk action buttons
-    const selectAllBtn = document.getElementById('select-all-btn');
-    const deselectAllBtn = document.getElementById('deselect-all-btn');
     const exportSelectedBtn = document.getElementById('export-selected-btn');
     const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', selectAllOnPage);
-    }
-    if (deselectAllBtn) {
-        deselectAllBtn.addEventListener('click', deselectAll);
-    }
     if (exportSelectedBtn) {
         exportSelectedBtn.addEventListener('click', openExportModal);
     }
@@ -143,15 +169,92 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === deleteModal) closeDeleteModal();
         });
     }
+
+    // Sortable header click handlers
+    document.querySelectorAll('.sortable-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            if (currentSort.column === column) {
+                // Toggle order if same column
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column, default to descending (except for text columns)
+                currentSort.column = column;
+                currentSort.order = (column === 'job_title' || column === 'sequence_id') ? 'asc' : 'desc';
+            }
+            updateSortIndicators();
+            currentPage = 1;
+            loadSequences();
+        });
+    });
+
+    // Initialize sort indicators
+    updateSortIndicators();
 });
+
+/**
+ * Update sort indicator icons in table headers
+ */
+function updateSortIndicators() {
+    document.querySelectorAll('.sortable-header').forEach(header => {
+        const column = header.dataset.sort;
+        const isActive = currentSort.column === column;
+
+        // Remove existing sort classes
+        header.classList.remove('sorted', 'asc', 'desc');
+
+        // Add appropriate classes if this column is active
+        if (isActive) {
+            header.classList.add('sorted', currentSort.order);
+        }
+    });
+}
+
+/**
+ * Toggle filter panel open/closed
+ */
+function toggleFilterPanel() {
+    filterPanelOpen = !filterPanelOpen;
+    filterPanel.classList.toggle('hidden', !filterPanelOpen);
+    filterChevron.classList.toggle('rotate-180', filterPanelOpen);
+}
+
+/**
+ * Update active filter count badge
+ */
+function updateActiveFilterCount() {
+    let count = 0;
+    if (currentFilters.jobTitle) count++;
+    if (currentFilters.sequenceId) count++;
+    if (currentFilters.sequence) count++;
+    if (currentFilters.dateFrom || currentFilters.dateTo) count++;
+    if (currentFilters.psiOperator && currentFilters.psiValue !== null) count++;
+
+    if (count > 0) {
+        activeFilterCount.textContent = count;
+        activeFilterCount.classList.remove('hidden');
+    } else {
+        activeFilterCount.classList.add('hidden');
+    }
+}
 
 /**
  * Apply current filters and load sequences
  */
 function applyFilters() {
-    currentFilters.search = searchInput.value.trim();
-    currentFilters.dateFrom = dateFromInput.value || null;
-    currentFilters.dateTo = dateToInput.value || null;
+    // Collect all filter values
+    currentFilters.jobTitle = filterJobTitle.value.trim();
+    currentFilters.sequenceId = filterSequenceId.value.trim();
+    currentFilters.sequence = filterSequence.value.trim();
+    currentFilters.dateFrom = filterDateFrom.value || null;
+    currentFilters.dateTo = filterDateTo.value || null;
+    currentFilters.psiOperator = filterPsiOperator.value || '';
+    currentFilters.psiValue = filterPsiValue.value ? parseFloat(filterPsiValue.value) : null;
+    currentFilters.psiValue2 = filterPsiOperator.value === 'between' && filterPsiValue2.value
+        ? parseFloat(filterPsiValue2.value)
+        : null;
+
+    updateActiveFilterCount();
     currentPage = 1;
     loadSequences();
 }
@@ -160,14 +263,30 @@ function applyFilters() {
  * Clear all filters
  */
 function clearFilters() {
-    searchInput.value = '';
-    dateFromInput.value = '';
-    dateToInput.value = '';
+    // Clear all inputs
+    filterJobTitle.value = '';
+    filterSequenceId.value = '';
+    filterSequence.value = '';
+    filterDateFrom.value = '';
+    filterDateTo.value = '';
+    filterPsiOperator.value = '';
+    filterPsiValue.value = '';
+    filterPsiValue2.value = '';
+    filterPsiValue2Container.classList.add('hidden');
+
+    // Reset filter state
     currentFilters = {
-        search: '',
+        jobTitle: '',
+        sequenceId: '',
+        sequence: '',
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        psiOperator: '',
+        psiValue: null,
+        psiValue2: null
     };
+
+    updateActiveFilterCount();
     currentPage = 1;
     loadSequences();
 }
@@ -192,14 +311,38 @@ async function loadSequences() {
             page_size: pageSize
         });
 
-        if (currentFilters.search) {
-            params.append('search', currentFilters.search);
+        // Add text search filters
+        if (currentFilters.jobTitle) {
+            params.append('job_title', currentFilters.jobTitle);
         }
+        if (currentFilters.sequenceId) {
+            params.append('sequence_id', currentFilters.sequenceId);
+        }
+        if (currentFilters.sequence) {
+            params.append('sequence', currentFilters.sequence);
+        }
+
+        // Add date filters
         if (currentFilters.dateFrom) {
             params.append('date_from', currentFilters.dateFrom);
         }
         if (currentFilters.dateTo) {
             params.append('date_to', currentFilters.dateTo);
+        }
+
+        // Add PSI filters
+        if (currentFilters.psiOperator && currentFilters.psiValue !== null) {
+            params.append('psi_operator', currentFilters.psiOperator);
+            params.append('psi_value', currentFilters.psiValue);
+            if (currentFilters.psiOperator === 'between' && currentFilters.psiValue2 !== null) {
+                params.append('psi_value2', currentFilters.psiValue2);
+            }
+        }
+
+        // Add sort parameters
+        if (currentSort.column) {
+            params.append('sort_by', currentSort.column);
+            params.append('sort_order', currentSort.order);
         }
 
         const response = await fetch(`/api/history/sequences?${params.toString()}`);
@@ -289,8 +432,8 @@ function renderSequences(sequences) {
                        </span>`
                     : escapeHtml(seq.sequence_id)}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${date}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm font-mono ${seq.psi !== null ? 'text-gray-900' : 'text-gray-400'}">${psiDisplay}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${date}</td>
             <td class="px-4 py-3 whitespace-nowrap">${statusBadge}</td>
             <td class="seq-col px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-500 ${showSequenceColumn ? '' : 'hidden'}">
                 <span title="${escapeHtml(seq.sequence)}">${escapeHtml(seqDisplay)}</span>
