@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ settings.app_name }} - Interpretable Splicing Prediction{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Hero Section -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ settings.app_name }}</h1>
+        <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            ExonAI is a web server that enables users to input an exon sequence and examine how an
+            interpretable neural network predicts its splicing output (percent spliced in, PSI).
+        </p>
+    </div>
+
+    <!-- Track Cards -->
+    <div class="grid md:grid-cols-3 gap-6 mt-8">
+        <!-- Splicing Prediction - Active -->
+        <a href="/input" class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary-300 transition-all">
+            <div class="flex items-center justify-center w-12 h-12 bg-primary-100 rounded-lg mb-4">
+                <svg class="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Splicing Prediction</h3>
+            <p class="text-sm text-gray-600">
+                Predict the percent spliced in (PSI) value for an exon sequence and visualize the model's interpretation.
+            </p>
+        </a>
+
+        <!-- Mutagenesis - Coming Soon -->
+        <div class="block bg-gray-50 rounded-lg border border-gray-200 p-6 opacity-75 cursor-not-allowed">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-lg">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Coming Soon
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">Mutagenesis Prediction</h3>
+            <p class="text-sm text-gray-400">
+                Analyze how single nucleotide mutations affect splicing outcomes across your sequence.
+            </p>
+        </div>
+
+        <!-- Exon Comparison - Coming Soon -->
+        <div class="block bg-gray-50 rounded-lg border border-gray-200 p-6 opacity-75 cursor-not-allowed">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-lg">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Coming Soon
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-500 mb-2">Exon Comparison</h3>
+            <p class="text-sm text-gray-400">
+                Compare multiple exon sequences side-by-side to understand differences in predicted splicing behavior.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
