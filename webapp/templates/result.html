@@ -70,68 +70,59 @@
             <p id="sequence" class="font-mono text-sm break-all text-gray-900 bg-gray-50 p-3 rounded"></p>
         </div>
 
-        <!-- Silhouette View -->
+        <!-- Visualization Tabs -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div class="p-4 border-b border-gray-200 flex items-center justify-between cursor-pointer" onclick="toggleSection('silhouette')">
-                <div>
-                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex" role="tablist" aria-label="Visualization tabs">
+                    <button type="button"
+                            id="tab-silhouette"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="panel-silhouette"
+                            class="px-6 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 focus:outline-none"
+                            onclick="switchTab('silhouette')">
                         Silhouette View
-                        <span class="ml-2 text-gray-400 font-normal normal-case">
-                            (blue = inclusion strength, red = skipping strength per position)
-                        </span>
-                    </h3>
-                </div>
-                <button type="button" class="text-gray-400 hover:text-gray-600" id="silhouette-toggle">
-                    <svg id="silhouette-chevron-down" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                    <svg id="silhouette-chevron-up" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                    </svg>
-                </button>
+                    </button>
+                    <button type="button"
+                            id="tab-heatmap"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="panel-heatmap"
+                            class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none"
+                            onclick="switchTab('heatmap')">
+                        Filter Heatmap
+                    </button>
+                </nav>
             </div>
-            <div id="silhouette-content" class="p-6">
+
+            <!-- Silhouette Panel -->
+            <div id="panel-silhouette" role="tabpanel" aria-labelledby="tab-silhouette" class="p-6">
+                <p class="text-sm text-gray-500 mb-4">
+                    Blue = inclusion strength, red = skipping strength per position
+                </p>
                 <div id="silhouette-container" class="w-full" style="min-height: 488px;">
                     <iframe
                         id="silhouette-iframe"
                         src="/shiny/silhouette/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                         class="w-full border-0"
                         style="height: 488px; min-height: 450px;"
-                        loading="lazy"
                         title="Silhouette View"
                     ></iframe>
                 </div>
             </div>
-        </div>
 
-        <!-- Filter Activation Heatmap -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div class="p-4 border-b border-gray-200 flex items-center justify-between cursor-pointer" onclick="toggleSection('heatmap')">
-                <div>
-                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        Filter Activation Heatmap
-                        <span class="ml-2 text-gray-400 font-normal normal-case">
-                            (blue = inclusion, red = skipping, with filter icons)
-                        </span>
-                    </h3>
-                </div>
-                <button type="button" class="text-gray-400 hover:text-gray-600" id="heatmap-toggle">
-                    <svg id="heatmap-chevron-down" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                    <svg id="heatmap-chevron-up" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                    </svg>
-                </button>
-            </div>
-            <div id="heatmap-content" class="p-6">
+            <!-- Heatmap Panel (hidden by default) -->
+            <div id="panel-heatmap" role="tabpanel" aria-labelledby="tab-heatmap" class="p-6 hidden">
+                <p class="text-sm text-gray-500 mb-4">
+                    Blue = inclusion, red = skipping, with filter icons
+                </p>
                 <div id="heatmap-container" class="w-full" style="min-height: 675px;">
                     <iframe
                         id="heatmap-iframe"
-                        src="/shiny/heatmap/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        data-src="/shiny/heatmap/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                         class="w-full border-0"
                         style="height: 675px; min-height: 638px;"
-                        loading="lazy"
                         title="Filter Activation Heatmap"
                     ></iframe>
                 </div>
@@ -182,20 +173,51 @@
     const jobId = "{{ job_id }}";
     const batchIndex = {{ batch_index if batch_index is defined and batch_index is not none else 'null' }};
 
-    // Toggle collapsible sections
-    function toggleSection(section) {
-        const content = document.getElementById(section + '-content');
-        const chevronDown = document.getElementById(section + '-chevron-down');
-        const chevronUp = document.getElementById(section + '-chevron-up');
+    // Tab state
+    let activeTab = 'silhouette';
+    let loadedTabs = new Set(['silhouette']);
 
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            chevronDown.classList.remove('hidden');
-            chevronUp.classList.add('hidden');
-        } else {
-            content.classList.add('hidden');
-            chevronDown.classList.add('hidden');
-            chevronUp.classList.remove('hidden');
+    function switchTab(tabName) {
+        if (tabName === activeTab) return;
+
+        const tabs = ['silhouette', 'heatmap'];
+        tabs.forEach(tab => {
+            const button = document.getElementById(`tab-${tab}`);
+            const panel = document.getElementById(`panel-${tab}`);
+
+            if (tab === tabName) {
+                // Activate
+                button.classList.remove('border-transparent', 'text-gray-500');
+                button.classList.add('border-primary-500', 'text-primary-600');
+                button.setAttribute('aria-selected', 'true');
+                panel.classList.remove('hidden');
+            } else {
+                // Deactivate
+                button.classList.add('border-transparent', 'text-gray-500');
+                button.classList.remove('border-primary-500', 'text-primary-600');
+                button.setAttribute('aria-selected', 'false');
+                panel.classList.add('hidden');
+            }
+        });
+
+        activeTab = tabName;
+
+        // Lazy load iframe if not yet loaded
+        if (!loadedTabs.has(tabName)) {
+            const iframe = document.getElementById(`${tabName}-iframe`);
+            console.log(`[Result] Lazy loading ${tabName} iframe:`, iframe);
+            if (iframe && iframe.dataset.src) {
+                console.log(`[Result] Setting ${tabName} iframe src to:`, iframe.dataset.src);
+                iframe.src = iframe.dataset.src;
+                iframe.onload = function() {
+                    console.log(`[Result] ${tabName} iframe loaded, sending params...`);
+                    setTimeout(function() { sendParamsToIframe(iframe); }, 500);
+                };
+                iframe.onerror = function(e) {
+                    console.error(`[Result] ${tabName} iframe error:`, e);
+                };
+            }
+            loadedTabs.add(tabName);
         }
     }
 
@@ -226,21 +248,15 @@
         }
     });
 
-    // Also send on iframe load (backup)
+    // Also send on iframe load (backup) - only for silhouette initially
+    // Heatmap iframe will be set up when its tab is clicked (lazy loading)
     document.addEventListener('DOMContentLoaded', function() {
         const silhouetteIframe = document.getElementById('silhouette-iframe');
-        const heatmapIframe = document.getElementById('heatmap-iframe');
 
         if (silhouetteIframe) {
             silhouetteIframe.onload = function() {
                 // Small delay to ensure Shiny is ready
                 setTimeout(function() { sendParamsToIframe(silhouetteIframe); }, 500);
-            };
-        }
-        if (heatmapIframe) {
-            heatmapIframe.onload = function() {
-                // Small delay to ensure Shiny is ready
-                setTimeout(function() { sendParamsToIframe(heatmapIframe); }, 500);
             };
         }
     });
