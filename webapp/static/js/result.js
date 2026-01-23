@@ -61,10 +61,10 @@ function displayResults(data) {
 
     // For batch sequences, hide elements that don't support batch sequence detail
     if (typeof batchIndex !== 'undefined' && batchIndex !== null) {
-        // Hide heatmap (shiny app doesn't support batch sequence detail)
-        const heatmapContainer = document.getElementById('heatmap-container');
-        if (heatmapContainer) {
-            heatmapContainer.parentElement.classList.add('hidden');
+        // Hide heatmap tab (shiny app doesn't support batch sequence detail)
+        const heatmapTab = document.getElementById('tab-heatmap');
+        if (heatmapTab) {
+            heatmapTab.classList.add('hidden');
         }
         // Hide CSV download link (not available for individual batch sequences)
         const csvLink = document.querySelector('a[href*="/api/export/"]');
@@ -92,8 +92,8 @@ function displayResults(data) {
     // Sequence
     sequenceEl.textContent = data.sequence || 'N/A';
 
-    // Force plot
-    if (data.force_plot_data && data.force_plot_data.activations) {
+    // Force plot (only if element exists - may be removed in favor of Shiny visualizations)
+    if (forcePlotEl && data.force_plot_data && data.force_plot_data.activations) {
         const activations = data.force_plot_data.activations;
         // Combine qc_incl and qc_skip to get position-wise contribution
         // Positive = promotes inclusion (green), Negative = promotes skipping (red)
@@ -104,7 +104,7 @@ function displayResults(data) {
             });
             createForcePlot(forceData);
         }
-    } else if (data.force_plot && data.force_plot.length > 0) {
+    } else if (forcePlotEl && data.force_plot && data.force_plot.length > 0) {
         // Fallback for legacy format
         createForcePlot(data.force_plot);
     }
@@ -114,6 +114,9 @@ function displayResults(data) {
  * Create the force plot using Plotly
  */
 function createForcePlot(forceData) {
+    // Skip if force plot element doesn't exist
+    if (!forcePlotEl) return;
+
     // forceData is an array of 90 values (one per position)
     const positions = Array.from({ length: forceData.length }, (_, i) => i + 1);
 
