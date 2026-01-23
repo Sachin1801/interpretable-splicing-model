@@ -350,3 +350,128 @@ class SequenceNameUpdateResponse(BaseModel):
     index: int
     old_name: str
     new_name: str
+
+
+# ============================================================================
+# Mutagenesis Schemas
+# ============================================================================
+
+
+class MutagenesisInput(BaseModel):
+    """Schema for mutagenesis analysis request."""
+
+    sequence: str = Field(
+        ...,
+        min_length=settings.exon_length,
+        max_length=settings.exon_length,
+        description=f"The {settings.exon_length}-nucleotide reference sequence",
+    )
+    access_token: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="User access token for job history tracking",
+    )
+    job_title: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Optional job title (auto-generated if not provided)",
+    )
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_sequence(cls, v: str) -> str:
+        """Validate that sequence contains only valid nucleotides."""
+        v = v.upper().replace("U", "T")
+
+        if len(v) != settings.exon_length:
+            raise ValueError(
+                f"Sequence must be exactly {settings.exon_length} nucleotides (got {len(v)})"
+            )
+
+        if not re.match(f"^[ACGT]{{{settings.exon_length}}}$", v):
+            invalid_chars = set(v) - set("ACGT")
+            raise ValueError(
+                f"Sequence must contain only A, C, G, T. Found invalid characters: {invalid_chars}"
+            )
+
+        return v
+
+
+class MutationResult(BaseModel):
+    """Schema for a single mutation result."""
+
+    position: int = Field(..., ge=1, le=70, description="1-indexed position in sequence")
+    original: str = Field(..., description="Original nucleotide")
+    mutant: str = Field(..., description="Mutant nucleotide")
+    mutation_label: str = Field(..., description="Mutation label (e.g., 'A1C')")
+    psi: Optional[float] = Field(None, ge=0.0, le=1.0, description="Predicted PSI for mutant")
+    delta_psi: Optional[float] = Field(None, description="Delta PSI (mutant - reference)")
+
+
+class MutagenesisResponse(BaseModel):
+    """Schema for mutagenesis analysis response."""
+
+    job_id: str
+    status: str
+    reference_sequence: str
+    reference_psi: Optional[float] = None
+    total_mutations: int = 210
+    completed_mutations: int = 0
+    mutations: Optional[List[MutationResult]] = None
+    heatmap_data: Optional[Dict[str, Any]] = None
+    top_positive: Optional[List[MutationResult]] = None
+    top_negative: Optional[List[MutationResult]] = None
+    created_at: Optional[datetime] = None
+    message: Optional[str] = None
+
+
+# ============================================================================
+# Authentication Schemas
+# ============================================================================
+
+
+class UserRegisterRequest(BaseModel):
+    """Schema for user registration request."""
+
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., min_length=8, max_length=128, description="Password (min 8 characters)")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password strength."""
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class UserLoginRequest(BaseModel):
+    """Schema for user login request."""
+
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., description="Password")
+
+
+class UserResponse(BaseModel):
+    """Schema for user info response."""
+
+    id: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    linked_token: Optional[str] = None
+
+
+class AuthResponse(BaseModel):
+    """Schema for authentication response."""
+
+    success: bool
+    message: str
+    user: Optional[UserResponse] = None
+    token: Optional[str] = None
+
+
+class LinkTokenRequest(BaseModel):
+    """Schema for linking an access token to a user account."""
+
+    access_token: str = Field(..., max_length=64, description="The access token to link")

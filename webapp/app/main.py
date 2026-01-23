@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
@@ -184,10 +184,10 @@ async def help_page(request: Request):
     return templates.TemplateResponse("help.html", {"request": request, "settings": settings})
 
 
-@app.get("/tutorial", response_class=HTMLResponse, include_in_schema=False)
-async def tutorial_page(request: Request):
-    """Render the tutorial page."""
-    return templates.TemplateResponse("tutorial.html", {"request": request, "settings": settings})
+@app.get("/tutorial", include_in_schema=False)
+async def tutorial_page():
+    """Redirect to help page tutorials section."""
+    return RedirectResponse(url="/help#tutorial", status_code=301)
 
 
 @app.get("/methodology", response_class=HTMLResponse, include_in_schema=False)
@@ -200,6 +200,21 @@ async def methodology_page(request: Request):
 async def history_page(request: Request):
     """Render the job history page."""
     return templates.TemplateResponse("history.html", {"request": request, "settings": settings})
+
+
+@app.get("/mutagenesis", response_class=HTMLResponse, include_in_schema=False)
+async def mutagenesis_page(request: Request):
+    """Render the mutagenesis input page."""
+    return templates.TemplateResponse("mutagenesis.html", {"request": request, "settings": settings})
+
+
+@app.get("/mutagenesis/{job_id}", response_class=HTMLResponse, include_in_schema=False)
+async def mutagenesis_result_page(request: Request, job_id: str):
+    """Render the mutagenesis result page."""
+    return templates.TemplateResponse(
+        "mutagenesis_result.html",
+        {"request": request, "job_id": job_id, "settings": settings}
+    )
 
 
 if __name__ == "__main__":
