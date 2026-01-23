@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}Splicing Prediction - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Hero Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+            RNA Splicing Predictor
+        </h1>
+    </div>
+
+    <!-- Token Display Section -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2">
+            <span class="relative group text-sm font-medium text-blue-900 cursor-help underline decoration-dotted underline-offset-2">
+                Your Access Token:
+                <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 font-normal no-underline">
+                    <p>This unique token identifies your jobs. Save it to access your job history from any device or browser.</p>
+                    <p class="mt-2 text-gray-300">Double-click the token to edit it.</p>
+                    <div class="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-gray-900"></div>
+                </div>
+            </span>
+            <code id="token-display" class="bg-white px-3 py-1 rounded border border-blue-200 text-sm font-mono text-blue-800"></code>
+        </div>
+    </div>
+
+    <!-- Prediction Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form id="predict-form">
+            <!-- Job Title -->
+            <div class="mb-4">
+                <label for="job-title" class="block text-sm text-gray-700 mb-2">
+                    <span class="relative group font-medium cursor-help underline decoration-dotted underline-offset-2">
+                        Job Title
+                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 font-normal no-underline">
+                            <p>Give your prediction job a memorable name to easily find it later in your job history.</p>
+                            <p class="mt-2 text-gray-300">If left empty, a name will be auto-generated (e.g., "2026-01-15_abc12").</p>
+                            <div class="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-gray-900"></div>
+                        </div>
+                    </span>
+                    <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input type="text" id="job-title" name="job_title"
+                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm p-2 border"
+                       placeholder="e.g., BRCA1 Exon Analysis">
+            </div>
+
+            <!-- Sequence Input -->
+            <div class="mb-4">
+                <label for="sequences" class="block text-sm text-gray-700 mb-2">
+                    <span class="relative group font-medium cursor-help underline decoration-dotted underline-offset-2">
+                        Sequence(s)
+                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 font-normal no-underline">
+                            <p class="font-semibold mb-1">How to enter sequences:</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li><strong>Single sequence:</strong> Paste a 70-nucleotide sequence directly</li>
+                                <li><strong>Multiple (FASTA):</strong> Use &gt;name on one line, sequence on next</li>
+                                <li><strong>Multiple (plain):</strong> One sequence per line</li>
+                            </ul>
+                            <p class="mt-2 text-gray-300">Only A, C, G, T, U characters allowed. Each sequence must be exactly 70 nucleotides.</p>
+                            <div class="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-gray-900"></div>
+                        </div>
+                    </span>
+                    <span class="text-gray-400 font-normal">(70nt each, A/C/G/T/U, max 100)</span>
+                </label>
+                <textarea id="sequences" name="sequences" rows="8"
+                          class="block w-full rounded-md border-gray-300 shadow-sm font-mono text-sm p-3 border focus:border-primary-500 focus:ring-primary-500"
+                          placeholder="Paste one or more sequences:
+
+Single sequence:
+GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT
+
+Multiple sequences (FASTA format):
+>Gene1_Exon5
+GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT
+>Gene2_Exon3
+CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC
+
+Or plain sequences (one per line):
+GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT
+CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC"></textarea>
+                <div class="mt-2 flex justify-between items-center">
+                    <span id="sequence-count" class="text-sm text-gray-500">0 sequences detected</span>
+                    <span id="validation-message" class="text-sm text-red-500 hidden"></span>
+                </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="mb-6">
+                <label class="block text-sm text-gray-700 mb-2">
+                    <span class="relative group font-medium cursor-help underline decoration-dotted underline-offset-2">
+                        Or Upload File
+                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 font-normal no-underline">
+                            <p class="font-semibold mb-1">Supported file formats:</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li><strong>CSV:</strong> 1 column (sequences only) or 2 columns (name, sequence)</li>
+                                <li><strong>FASTA:</strong> Standard format with &gt;header lines</li>
+                            </ul>
+                            <p class="mt-2 text-gray-300">Delimiters (comma, semicolon, tab) and headers are auto-detected.</p>
+                            <div class="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-gray-900"></div>
+                        </div>
+                    </span>
+                    <span class="text-gray-400 font-normal">(CSV or FASTA)</span>
+                </label>
+                <div class="flex items-center gap-4">
+                    <input type="file" id="file-upload" accept=".csv,.fasta,.fa,.fna,.txt,.tsv"
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
+                    <button type="button" id="clear-file-btn" class="text-gray-400 hover:text-gray-600 hidden">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <p id="file-status" class="mt-1 text-sm text-gray-500"></p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3">
+                <button type="submit" id="submit-btn"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="hidden animate-spin -ml-1 mr-2 h-4 w-4 text-white" id="loading-spinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="submit-text">Predict PSI</span>
+                </button>
+                <button type="button" id="example-btn"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Try Example
+                </button>
+                <button type="button" id="clear-btn"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </form>
+
+        <!-- Error message -->
+        <div id="error-message" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div class="flex">
+                <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="ml-3 text-sm text-red-700" id="error-text"></p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/token.js"></script>
+<script src="/static/js/file-parser.js"></script>
+<script>
+// Example sequences
+const EXAMPLES = [
+    {
+        name: "High Inclusion",
+        sequence: "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT",
+        expectedPsi: "~0.98"
+    },
+    {
+        name: "Balanced",
+        sequence: "CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC",
+        expectedPsi: "~0.49"
+    },
+    {
+        name: "High Skipping",
+        sequence: "ACACTCCGCAGCACACTCGGCAAAGAAGTTAGGCCCCGCTCTTACAAACATCTAGCATTTTGTATGGTCT",
+        expectedPsi: "~0.00"
+    }
+];
+
+// DOM Elements
+const form = document.getElementById('predict-form');
+const sequencesInput = document.getElementById('sequences');
+const jobTitleInput = document.getElementById('job-title');
+const sequenceCount = document.getElementById('sequence-count');
+const validationMessage = document.getElementById('validation-message');
+const submitBtn = document.getElementById('submit-btn');
+const submitText = document.getElementById('submit-text');
+const loadingSpinner = document.getElementById('loading-spinner');
+const errorMessage = document.getElementById('error-message');
+const errorText = document.getElementById('error-text');
+const exampleBtn = document.getElementById('example-btn');
+const clearBtn = document.getElementById('clear-btn');
+const fileUpload = document.getElementById('file-upload');
+const clearFileBtn = document.getElementById('clear-file-btn');
+const fileStatus = document.getElementById('file-status');
+
+let currentExampleIndex = 0;
+let parsedSequences = [];
+
+// Initialize token display
+document.addEventListener('DOMContentLoaded', () => {
+    TokenManager.initTokenDisplay();
+    updateSequenceCount();
+});
+
+/**
+ * Update sequence count and validation
+ */
+function updateSequenceCount() {
+    const text = sequencesInput.value;
+    if (!text.trim()) {
+        sequenceCount.textContent = '0 sequences detected';
+        sequenceCount.className = 'text-sm text-gray-500';
+        parsedSequences = [];
+        updateSubmitButton();
+        return;
+    }
+
+    const result = FileParser.parseAndValidate(text, 70);
+    parsedSequences = result.sequences;
+
+    if (parsedSequences.length === 0) {
+        sequenceCount.textContent = '0 sequences detected';
+        sequenceCount.className = 'text-sm text-gray-500';
+    } else if (parsedSequences.length === 1) {
+        if (result.validCount === 1) {
+            sequenceCount.textContent = '1 valid sequence';
+            sequenceCount.className = 'text-sm text-green-600';
+        } else {
+            sequenceCount.textContent = '1 sequence (invalid)';
+            sequenceCount.className = 'text-sm text-red-600';
+        }
+    } else {
+        if (result.invalidCount === 0) {
+            sequenceCount.textContent = `${parsedSequences.length} valid sequences`;
+            sequenceCount.className = 'text-sm text-green-600';
+        } else {
+            sequenceCount.textContent = `${parsedSequences.length} sequences (${result.validCount} valid, ${result.invalidCount} invalid)`;
+            sequenceCount.className = 'text-sm text-yellow-600';
+        }
+    }
+
+    updateSubmitButton();
+}
+
+/**
+ * Update submit button state
+ */
+function updateSubmitButton() {
+    // Enable if we have at least one sequence (valid or not - backend will handle)
+    submitBtn.disabled = parsedSequences.length === 0;
+}
+
+/**
+ * Show loading state
+ */
+function setLoading(loading) {
+    if (loading) {
+        submitBtn.disabled = true;
+        submitText.textContent = 'Processing...';
+        loadingSpinner.classList.remove('hidden');
+    } else {
+        updateSubmitButton();
+        submitText.textContent = 'Predict PSI';
+        loadingSpinner.classList.add('hidden');
+    }
+}
+
+/**
+ * Show error message
+ */
+function showError(message) {
+    errorText.textContent = message;
+    errorMessage.classList.remove('hidden');
+}
+
+/**
+ * Hide error message
+ */
+function hideError() {
+    errorMessage.classList.add('hidden');
+}
+
+/**
+ * Load an example sequence
+ */
+function loadExample(index) {
+    const example = EXAMPLES[index];
+    sequencesInput.value = `>${example.name}\n${example.sequence}`;
+    updateSequenceCount();
+    hideError();
+}
+
+/**
+ * Handle file upload
+ */
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        fileStatus.textContent = 'Parsing file...';
+        const sequences = await FileParser.parseFile(file);
+
+        if (sequences.length === 0) {
+            fileStatus.textContent = 'No sequences found in file';
+            fileStatus.className = 'mt-1 text-sm text-red-500';
+            return;
+        }
+
+        // Convert to FASTA format and put in textarea
+        const fastaText = sequences.map(s => `>${s.name}\n${s.sequence}`).join('\n');
+        sequencesInput.value = fastaText;
+        updateSequenceCount();
+
+        fileStatus.textContent = '';
+        clearFileBtn.classList.remove('hidden');
+        hideError();
+
+    } catch (error) {
+        fileStatus.textContent = `Error: ${error.message}`;
+        fileStatus.className = 'mt-1 text-sm text-red-500';
+    }
+}
+
+/**
+ * Clear file input
+ */
+function clearFileInput() {
+    fileUpload.value = '';
+    fileStatus.textContent = '';
+    clearFileBtn.classList.add('hidden');
+}
+
+/**
+ * Submit the prediction
+ */
+async function submitPrediction(event) {
+    event.preventDefault();
+
+    if (parsedSequences.length === 0) {
+        showError('Please enter at least one sequence');
+        return;
+    }
+
+    setLoading(true);
+    hideError();
+
+    const token = TokenManager.getOrCreateToken();
+    const jobTitle = jobTitleInput.value.trim() || null;
+
+    try {
+        let response;
+        let result;
+
+        if (parsedSequences.length === 1) {
+            // Single sequence prediction
+            const seq = parsedSequences[0];
+            response = await fetch('/api/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sequence: seq.sequence,
+                    name: seq.name,
+                    access_token: token,
+                    job_title: jobTitle
+                })
+            });
+        } else {
+            // Batch prediction
+            const sequences = parsedSequences.map(s => ({
+                name: s.name,
+                sequence: s.sequence
+            }));
+            response = await fetch('/api/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sequences: sequences,
+                    access_token: token,
+                    job_title: jobTitle
+                })
+            });
+        }
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Prediction failed');
+        }
+
+        result = await response.json();
+
+        // Redirect to result page
+        window.location.href = `/result/${result.job_id}`;
+
+    } catch (error) {
+        console.error('Prediction error:', error);
+        showError(error.message || 'An error occurred. Please try again.');
+        setLoading(false);
+    }
+}
+
+// Event listeners
+if (form) {
+    form.addEventListener('submit', submitPrediction);
+}
+
+if (sequencesInput) {
+    sequencesInput.addEventListener('input', updateSequenceCount);
+}
+
+if (exampleBtn) {
+    exampleBtn.addEventListener('click', () => {
+        loadExample(currentExampleIndex);
+        currentExampleIndex = (currentExampleIndex + 1) % EXAMPLES.length;
+    });
+}
+
+if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+        sequencesInput.value = '';
+        jobTitleInput.value = '';
+        updateSequenceCount();
+        clearFileInput();
+        hideError();
+    });
+}
+
+if (fileUpload) {
+    fileUpload.addEventListener('change', handleFileUpload);
+}
+
+if (clearFileBtn) {
+    clearFileBtn.addEventListener('click', clearFileInput);
+}
+
+// Make loadExample available globally for onclick handlers
+window.loadExample = loadExample;
+</script>
+{% endblock %}

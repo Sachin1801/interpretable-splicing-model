@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Result - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-[1920px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2">
+                <li>
+                    <a href="/" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                    </a>
+                </li>
+                <li>
+                    <svg class="h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </li>
+                <li>
+                    <span class="text-sm font-medium text-gray-500">Result</span>
+                </li>
+            </ol>
+        </nav>
+        <h1 class="mt-2 text-2xl font-bold text-gray-900">Prediction Result</h1>
+        <p class="text-sm text-gray-500">Job ID: <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ job_id }}</code></p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center py-12">
+        <svg class="animate-spin h-10 w-10 text-primary-600 mx-auto" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-4 text-gray-500" id="loading-text">Loading results...</p>
+    </div>
+
+    <!-- Results (hidden initially) -->
+    <div id="results-container" class="hidden space-y-6">
+        <!-- PSI Value Card -->
+        <div id="psi-card" class="rounded-lg shadow-sm border p-6">
+            <div class="text-center">
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Predicted PSI</p>
+                <p id="psi-value" class="mt-2 text-5xl font-bold"></p>
+                <p id="psi-interpretation" class="mt-2 text-lg"></p>
+            </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Structure -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">RNA Secondary Structure</h3>
+                <p id="structure" class="font-mono text-sm break-all text-gray-900"></p>
+            </div>
+
+            <!-- MFE -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Minimum Free Energy</h3>
+                <p class="text-2xl font-bold text-gray-900"><span id="mfe"></span> <span class="text-base font-normal text-gray-500">kcal/mol</span></p>
+            </div>
+        </div>
+
+        <!-- Input Sequence -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Input Sequence</h3>
+            <p id="sequence" class="font-mono text-sm break-all text-gray-900 bg-gray-50 p-3 rounded"></p>
+        </div>
+
+        <!-- Visualization Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex" role="tablist" aria-label="Visualization tabs">
+                    <button type="button"
+                            id="tab-silhouette"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="panel-silhouette"
+                            class="px-6 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 focus:outline-none"
+                            onclick="switchTab('silhouette')">
+                        Silhouette View
+                    </button>
+                    <button type="button"
+                            id="tab-heatmap"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="panel-heatmap"
+                            class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none"
+                            onclick="switchTab('heatmap')">
+                        Filter Heatmap
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Silhouette Panel -->
+            <div id="panel-silhouette" role="tabpanel" aria-labelledby="tab-silhouette" class="p-6">
+                <p class="text-sm text-gray-500 mb-4">
+                    Blue = inclusion strength, red = skipping strength per position
+                </p>
+                <div id="silhouette-container" class="w-full" style="min-height: 488px;">
+                    <iframe
+                        id="silhouette-iframe"
+                        src="/shiny/silhouette/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        class="w-full border-0"
+                        style="height: 488px; min-height: 450px;"
+                        title="Silhouette View"
+                    ></iframe>
+                </div>
+            </div>
+
+            <!-- Heatmap Panel (hidden by default) -->
+            <div id="panel-heatmap" role="tabpanel" aria-labelledby="tab-heatmap" class="p-6 hidden">
+                <p class="text-sm text-gray-500 mb-4">
+                    Blue = inclusion, red = skipping, with filter icons
+                </p>
+                <div id="heatmap-container" class="w-full" style="min-height: 675px;">
+                    <iframe
+                        id="heatmap-iframe"
+                        data-src="/shiny/heatmap/?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        class="w-full border-0"
+                        style="height: 675px; min-height: 638px;"
+                        title="Filter Activation Heatmap"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-3">
+            <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Prediction
+            </a>
+            <a href="/api/export/{{ job_id }}/csv" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download CSV
+            </a>
+            <button onclick="copyLink()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Copy Link
+            </button>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden">
+        <div class="rounded-lg bg-red-50 border border-red-200 p-6 text-center">
+            <svg class="h-12 w-12 text-red-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-red-800">Error Loading Results</h3>
+            <p id="error-message" class="mt-2 text-red-700"></p>
+            <a href="/" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
+                Try Again
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const jobId = "{{ job_id }}";
+    const batchIndex = {{ batch_index if batch_index is defined and batch_index is not none else 'null' }};
+
+    // Tab state
+    let activeTab = 'silhouette';
+    let loadedTabs = new Set(['silhouette']);
+
+    function switchTab(tabName) {
+        if (tabName === activeTab) return;
+
+        const tabs = ['silhouette', 'heatmap'];
+        tabs.forEach(tab => {
+            const button = document.getElementById(`tab-${tab}`);
+            const panel = document.getElementById(`panel-${tab}`);
+
+            if (tab === tabName) {
+                // Activate
+                button.classList.remove('border-transparent', 'text-gray-500');
+                button.classList.add('border-primary-500', 'text-primary-600');
+                button.setAttribute('aria-selected', 'true');
+                panel.classList.remove('hidden');
+            } else {
+                // Deactivate
+                button.classList.add('border-transparent', 'text-gray-500');
+                button.classList.remove('border-primary-500', 'text-primary-600');
+                button.setAttribute('aria-selected', 'false');
+                panel.classList.add('hidden');
+            }
+        });
+
+        activeTab = tabName;
+
+        // Lazy load iframe if not yet loaded
+        if (!loadedTabs.has(tabName)) {
+            const iframe = document.getElementById(`${tabName}-iframe`);
+            console.log(`[Result] Lazy loading ${tabName} iframe:`, iframe);
+            if (iframe && iframe.dataset.src) {
+                console.log(`[Result] Setting ${tabName} iframe src to:`, iframe.dataset.src);
+                iframe.src = iframe.dataset.src;
+                iframe.onload = function() {
+                    console.log(`[Result] ${tabName} iframe loaded, sending params...`);
+                    setTimeout(function() { sendParamsToIframe(iframe); }, 500);
+                };
+                iframe.onerror = function(e) {
+                    console.error(`[Result] ${tabName} iframe error:`, e);
+                };
+            }
+            loadedTabs.add(tabName);
+        }
+    }
+
+    // Send params to PyShiny iframes via postMessage
+    function sendParamsToIframe(iframe) {
+        if (iframe && iframe.contentWindow) {
+            console.log('[Result] Sending params to iframe:', jobId, batchIndex);
+            iframe.contentWindow.postMessage({
+                type: 'setParams',
+                job_id: jobId,
+                batch_index: batchIndex
+            }, '*');
+        }
+    }
+
+    // Listen for 'ready' message from iframes
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'ready') {
+            console.log('[Result] Received ready from:', event.data.source);
+            // Send params back to the iframe that signaled ready
+            if (event.source) {
+                event.source.postMessage({
+                    type: 'setParams',
+                    job_id: jobId,
+                    batch_index: batchIndex
+                }, '*');
+            }
+        }
+    });
+
+    // Also send on iframe load (backup) - only for silhouette initially
+    // Heatmap iframe will be set up when its tab is clicked (lazy loading)
+    document.addEventListener('DOMContentLoaded', function() {
+        const silhouetteIframe = document.getElementById('silhouette-iframe');
+
+        if (silhouetteIframe) {
+            silhouetteIframe.onload = function() {
+                // Small delay to ensure Shiny is ready
+                setTimeout(function() { sendParamsToIframe(silhouetteIframe); }, 500);
+            };
+        }
+    });
+</script>
+<script src="/static/js/result.js"></script>
+{% endblock %}

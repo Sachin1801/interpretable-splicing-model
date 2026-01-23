@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}About - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-3xl font-bold text-gray-900">About the Splicing Predictor</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            An interpretable deep learning model for predicting RNA alternative splicing outcomes
+        </p>
+    </div>
+
+    <!-- What is PSI Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">What is PSI?</h2>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <p class="text-gray-700 mb-4">
+                <strong>PSI (Percent Spliced In)</strong> is a measure of how often an exon is included in the mature mRNA transcript during alternative splicing. It ranges from 0 to 1:
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div class="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div class="text-3xl font-bold text-green-700">PSI = 1.0</div>
+                    <p class="text-sm text-green-600 mt-2">Exon always included</p>
+                </div>
+                <div class="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div class="text-3xl font-bold text-yellow-700">PSI = 0.5</div>
+                    <p class="text-sm text-yellow-600 mt-2">50/50 inclusion</p>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div class="text-3xl font-bold text-red-700">PSI = 0.0</div>
+                    <p class="text-sm text-red-600 mt-2">Exon always skipped</p>
+                </div>
+            </div>
+            <p class="text-gray-600 mt-6 text-sm">
+                Alternative splicing is a key regulatory mechanism that allows a single gene to produce multiple protein variants. Understanding and predicting splicing outcomes is crucial for studying gene regulation and disease mechanisms.
+            </p>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">How It Works</h2>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="space-y-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600 font-bold">1</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Input Your Sequence</h3>
+                        <p class="mt-1 text-gray-600">Enter a 70-nucleotide exon sequence (A, C, G, T only)</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600 font-bold">2</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Add Flanking Sequences</h3>
+                        <p class="mt-1 text-gray-600">The model adds 10 nucleotides on each side from the original experimental context</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600 font-bold">3</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Predict RNA Structure</h3>
+                        <p class="mt-1 text-gray-600">ViennaRNA predicts the secondary structure and identifies wobble base pairs</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600 font-bold">4</span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Neural Network Prediction</h3>
+                        <p class="mt-1 text-gray-600">The deep learning model predicts PSI based on sequence, structure, and wobble features</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Who Should Use This Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Who Should Use This Tool?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="h-6 w-6 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900">Researchers</h3>
+                </div>
+                <p class="text-gray-600">Studying alternative splicing mechanisms and regulation</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="h-6 w-6 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900">Synthetic Biologists</h3>
+                </div>
+                <p class="text-gray-600">Designing synthetic exons with specific splicing behavior</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="h-6 w-6 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900">Clinicians</h3>
+                </div>
+                <p class="text-gray-600">Investigating potential splicing effects of genetic variants</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="h-6 w-6 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900">Educators & Students</h3>
+                </div>
+                <p class="text-gray-600">Learning about splicing regulation and computational biology</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Limitations Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Limitations</h2>
+        <div class="bg-amber-50 rounded-lg border border-amber-200 p-6">
+            <ul class="space-y-3">
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-amber-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="text-gray-700"><strong>Fixed sequence length:</strong> Only accepts exactly 70-nucleotide exon sequences</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-amber-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="text-gray-700"><strong>Training data:</strong> Model was trained on HeLa cell data from the ES7 library</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-amber-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="text-gray-700"><strong>Cell type specificity:</strong> Predictions may not generalize to all cell types or tissues</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-amber-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="text-gray-700"><strong>Cis-regulatory only:</strong> Does not consider trans-acting factors or cellular context</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Performance Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Model Performance</h2>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Test R²</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">~0.85</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">Variance explained on held-out test set</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Correlation</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">~0.92</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">Pearson correlation with experimental PSI</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Test RMSE</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">~0.12</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">Root mean squared error on test set</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Training Data</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">~150,000</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">Synthetic exon sequences from ES7_HeLa</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="text-center">
+        <a href="/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+            Try the Predictor
+            <svg class="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+        </a>
+    </div>
+</div>
+{% endblock %}
