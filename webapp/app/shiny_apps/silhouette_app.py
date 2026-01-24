@@ -106,6 +106,24 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                             });
                         }
                     }
+                    // Handle download request from parent
+                    if (event.data && event.data.type === 'downloadRequest') {
+                        console.log('[Silhouette] Download requested');
+                        var img = document.querySelector('.plot-container img');
+                        if (img && img.src) {
+                            window.parent.postMessage({
+                                type: 'downloadResponse',
+                                source: 'silhouette',
+                                dataUrl: img.src
+                            }, '*');
+                        } else {
+                            window.parent.postMessage({
+                                type: 'downloadResponse',
+                                source: 'silhouette',
+                                error: 'Image not ready'
+                            }, '*');
+                        }
+                    }
                 });
                 // Request params from parent when Shiny is ready
                 document.addEventListener('shiny:connected', function() {
@@ -407,11 +425,11 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
             plt.tight_layout()
 
-            # Convert to HTML
+            # Convert to PNG
             import io
             import base64
             buf = io.BytesIO()
-            fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
             buf.seek(0)
             img_base64 = base64.b64encode(buf.read()).decode('utf-8')
             plt.close(fig)

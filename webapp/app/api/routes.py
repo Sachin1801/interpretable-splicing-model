@@ -107,6 +107,7 @@ async def submit_prediction(
     Submit a single sequence for PSI prediction.
 
     The sequence must be exactly 70 nucleotides long and contain only A, C, G, T.
+    Automatically runs variant analysis (mutagenesis) for single predictions.
     """
     job_id = str(uuid.uuid4())
 
@@ -137,8 +138,7 @@ async def submit_prediction(
         # Get force plot data
         force_plot_data = predictor.get_force_plot_data(request.sequence)
 
-        # Update job with results
-        job.status = "finished"
+        # Update job with PSI results
         job.psi = result["psi"]
         job.structure = result["structure"]
         job.mfe = result["mfe"]
@@ -146,6 +146,41 @@ async def submit_prediction(
         job.set_force_plot_data(force_plot_data)
         if result["warnings"]:
             job.warnings = json.dumps(result["warnings"])
+        db.commit()
+
+        # Automatically run variant analysis (mutagenesis) for single predictions
+        reference_psi = result["psi"]
+        mutations = generate_all_mutations(request.sequence)
+
+        mutation_results = []
+        for mutation in mutations:
+            try:
+                mut_result = predictor.predict_single(mutation["mutant_sequence"])
+                mutation_psi = mut_result["psi"]
+                delta_psi = calculate_delta_psi(reference_psi, mutation_psi)
+
+                mutation_results.append({
+                    "position": mutation["position"],
+                    "original": mutation["original"],
+                    "mutant": mutation["mutant"],
+                    "mutation_label": mutation["mutation_label"],
+                    "psi": mutation_psi,
+                    "delta_psi": delta_psi,
+                })
+            except Exception as e:
+                mutation_results.append({
+                    "position": mutation["position"],
+                    "original": mutation["original"],
+                    "mutant": mutation["mutant"],
+                    "mutation_label": mutation["mutation_label"],
+                    "psi": None,
+                    "delta_psi": None,
+                    "error": str(e),
+                })
+
+        # Store mutagenesis results
+        job.set_mutagenesis_results(mutation_results)
+        job.status = "finished"
         db.commit()
 
     except Exception as e:
@@ -380,6 +415,229 @@ async def get_job_result(
             created_at=job.created_at,
             expires_at=job.expires_at,
         )
+
+
+@router.post("/result/{job_id}/mutagenesis", tags=["results"])
+async def run_mutagenesis_for_result(
+    job_id: str,
+    batch_index: Optional[int] = Query(None, description="Index of sequence in batch job (0-based)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Run mutagenesis analysis on-demand for a specific result.
+
+    For single predictions, returns existing mutagenesis results if available.
+    For batch items, runs mutagenesis on the specified sequence.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != "finished":
+        raise HTTPException(status_code=400, detail="Job not yet complete")
+
+    # Determine which sequence to analyze
+    if job.is_batch:
+        if batch_index is None:
+            raise HTTPException(status_code=400, detail="batch_index required for batch jobs")
+
+        results = job.get_batch_results()
+        if batch_index >= len(results):
+            raise HTTPException(status_code=404, detail=f"Batch index {batch_index} not found")
+
+        seq_result = results[batch_index]
+        if seq_result.get("status") != "success":
+            raise HTTPException(status_code=400, detail="Cannot run mutagenesis on invalid sequence")
+
+        sequence = seq_result.get("sequence", "")
+        reference_psi = seq_result.get("psi")
+
+        # Check if mutagenesis already exists for this batch sequence
+        existing_mutagenesis = seq_result.get("mutagenesis_results")
+        if existing_mutagenesis:
+            heatmap_data = organize_mutations_for_heatmap(existing_mutagenesis)
+            top_positive, top_negative = get_top_mutations(existing_mutagenesis, n=10)
+            return {
+                "job_id": job_id,
+                "batch_index": batch_index,
+                "status": "finished",
+                "reference_sequence": sequence,
+                "reference_psi": reference_psi,
+                "total_mutations": 210,
+                "completed_mutations": len([m for m in existing_mutagenesis if m.get("psi") is not None]),
+                "mutations": existing_mutagenesis,
+                "heatmap_data": heatmap_data,
+                "top_positive": top_positive[:10],
+                "top_negative": top_negative[:10],
+            }
+    else:
+        # Single prediction - check for existing mutagenesis results
+        sequence = job.sequence
+        reference_psi = job.psi
+
+        existing_results = job.get_mutagenesis_results()
+        if existing_results:
+            heatmap_data = organize_mutations_for_heatmap(existing_results)
+            top_positive, top_negative = get_top_mutations(existing_results, n=10)
+            return {
+                "job_id": job_id,
+                "status": "finished",
+                "reference_sequence": sequence,
+                "reference_psi": reference_psi,
+                "total_mutations": 210,
+                "completed_mutations": len([m for m in existing_results if m.get("psi") is not None]),
+                "mutations": existing_results,
+                "heatmap_data": heatmap_data,
+                "top_positive": top_positive[:10],
+                "top_negative": top_negative[:10],
+            }
+
+    # Run mutagenesis analysis
+    try:
+        predictor = get_predictor()
+        mutations = generate_all_mutations(sequence)
+
+        mutation_results = []
+        for mutation in mutations:
+            try:
+                result = predictor.predict_single(mutation["mutant_sequence"])
+                mutation_psi = result["psi"]
+                delta_psi = calculate_delta_psi(reference_psi, mutation_psi)
+
+                mutation_results.append({
+                    "position": mutation["position"],
+                    "original": mutation["original"],
+                    "mutant": mutation["mutant"],
+                    "mutation_label": mutation["mutation_label"],
+                    "psi": mutation_psi,
+                    "delta_psi": delta_psi,
+                })
+            except Exception as e:
+                mutation_results.append({
+                    "position": mutation["position"],
+                    "original": mutation["original"],
+                    "mutant": mutation["mutant"],
+                    "mutation_label": mutation["mutation_label"],
+                    "psi": None,
+                    "delta_psi": None,
+                    "error": str(e),
+                })
+
+        # Store results
+        if job.is_batch:
+            # Store in batch results
+            results = job.get_batch_results()
+            results[batch_index]["mutagenesis_results"] = mutation_results
+            job.set_batch_results(results)
+        else:
+            job.set_mutagenesis_results(mutation_results)
+        db.commit()
+
+        heatmap_data = organize_mutations_for_heatmap(mutation_results)
+        top_positive, top_negative = get_top_mutations(mutation_results, n=10)
+
+        response = {
+            "job_id": job_id,
+            "status": "finished",
+            "reference_sequence": sequence,
+            "reference_psi": reference_psi,
+            "total_mutations": 210,
+            "completed_mutations": len([m for m in mutation_results if m.get("psi") is not None]),
+            "mutations": mutation_results,
+            "heatmap_data": heatmap_data,
+            "top_positive": top_positive[:10],
+            "top_negative": top_negative[:10],
+        }
+        if job.is_batch:
+            response["batch_index"] = batch_index
+
+        return response
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Mutagenesis analysis failed: {str(e)}")
+
+
+@router.get("/result/{job_id}/mutagenesis", tags=["results"])
+async def get_mutagenesis_for_result(
+    job_id: str,
+    batch_index: Optional[int] = Query(None, description="Index of sequence in batch job (0-based)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get existing mutagenesis results for a job.
+
+    Returns null/empty if mutagenesis hasn't been run yet.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != "finished":
+        raise HTTPException(status_code=400, detail="Job not yet complete")
+
+    if job.is_batch:
+        if batch_index is None:
+            raise HTTPException(status_code=400, detail="batch_index required for batch jobs")
+
+        results = job.get_batch_results()
+        if batch_index >= len(results):
+            raise HTTPException(status_code=404, detail=f"Batch index {batch_index} not found")
+
+        seq_result = results[batch_index]
+        existing_mutagenesis = seq_result.get("mutagenesis_results")
+
+        if not existing_mutagenesis:
+            return {
+                "job_id": job_id,
+                "batch_index": batch_index,
+                "status": "not_run",
+                "reference_sequence": seq_result.get("sequence", ""),
+                "reference_psi": seq_result.get("psi"),
+                "mutations": None,
+            }
+
+        heatmap_data = organize_mutations_for_heatmap(existing_mutagenesis)
+        top_positive, top_negative = get_top_mutations(existing_mutagenesis, n=10)
+        return {
+            "job_id": job_id,
+            "batch_index": batch_index,
+            "status": "finished",
+            "reference_sequence": seq_result.get("sequence", ""),
+            "reference_psi": seq_result.get("psi"),
+            "total_mutations": 210,
+            "completed_mutations": len([m for m in existing_mutagenesis if m.get("psi") is not None]),
+            "mutations": existing_mutagenesis,
+            "heatmap_data": heatmap_data,
+            "top_positive": top_positive[:10],
+            "top_negative": top_negative[:10],
+        }
+    else:
+        # Single prediction
+        existing_results = job.get_mutagenesis_results()
+
+        if not existing_results:
+            return {
+                "job_id": job_id,
+                "status": "not_run",
+                "reference_sequence": job.sequence,
+                "reference_psi": job.psi,
+                "mutations": None,
+            }
+
+        heatmap_data = organize_mutations_for_heatmap(existing_results)
+        top_positive, top_negative = get_top_mutations(existing_results, n=10)
+        return {
+            "job_id": job_id,
+            "status": "finished",
+            "reference_sequence": job.sequence,
+            "reference_psi": job.psi,
+            "total_mutations": 210,
+            "completed_mutations": len([m for m in existing_results if m.get("psi") is not None]),
+            "mutations": existing_results,
+            "heatmap_data": heatmap_data,
+            "top_positive": top_positive[:10],
+            "top_negative": top_negative[:10],
+        }
 
 
 @router.get("/heatmap/{job_id}", tags=["visualization"])

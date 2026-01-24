@@ -20,7 +20,7 @@ const forcePlotEl = document.getElementById('force-plot');
 
 // Polling configuration
 const POLL_INTERVAL = 1000; // 1 second
-const MAX_POLLS = 60; // 1 minute max
+const MAX_POLLS = 120; // 2 minutes max (mutagenesis takes ~45 seconds)
 let pollCount = 0;
 
 /**
@@ -59,14 +59,8 @@ function displayResults(data) {
     loadingState.classList.add('hidden');
     resultsContainer.classList.remove('hidden');
 
-    // For batch sequences, hide elements that don't support batch sequence detail
+    // For batch sequences, hide CSV download link (not available for individual batch sequences)
     if (typeof batchIndex !== 'undefined' && batchIndex !== null) {
-        // Hide heatmap tab (shiny app doesn't support batch sequence detail)
-        const heatmapTab = document.getElementById('tab-heatmap');
-        if (heatmapTab) {
-            heatmapTab.classList.add('hidden');
-        }
-        // Hide CSV download link (not available for individual batch sequences)
         const csvLink = document.querySelector('a[href*="/api/export/"]');
         if (csvLink) {
             csvLink.classList.add('hidden');
@@ -251,13 +245,17 @@ async function fetchResult() {
 
         const data = await response.json();
 
-        if (data.status === 'completed') {
+        if (data.status === 'completed' || data.status === 'finished') {
             displayResults(data);
         } else if (data.status === 'failed') {
-            showError(data.error || 'Prediction failed');
-        } else if (data.status === 'pending' || data.status === 'processing') {
-            // Update loading text
-            loadingText.textContent = `Processing... (${pollCount + 1}s)`;
+            showError(data.error || data.error_message || 'Prediction failed');
+        } else if (data.status === 'pending' || data.status === 'processing' || data.status === 'queued' || data.status === 'running') {
+            // Update loading text with progress indication
+            let statusText = 'Processing';
+            if (data.status === 'running') {
+                statusText = pollCount < 5 ? 'Running prediction' : 'Running variant analysis';
+            }
+            loadingText.textContent = `${statusText}... (${pollCount + 1}s)`;
 
             // Continue polling
             pollCount++;
