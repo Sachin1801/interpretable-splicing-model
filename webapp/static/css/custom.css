@@ -351,3 +351,91 @@ a:focus:not(:focus-visible) {
     animation: spin 1s linear infinite;
     margin-bottom: 12px;
 }
+
+/* History page floating row actions */
+.row-action-buttons {
+    display: flex;
+    gap: 4px;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.row-action-buttons.visible {
+    opacity: 1;
+}
+
+.row-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    position: relative;
+}
+
+.row-action-btn:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.row-action-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Tooltip for row action buttons */
+.row-action-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: #1f2937;
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    pointer-events: none;
+    margin-bottom: 4px;
+}
+
+.row-action-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Preview modal PSI card colors */
+.preview-psi-high {
+    background-color: #dcfce7;
+}
+
+.preview-psi-high #preview-psi-value {
+    color: #166534;
+}
+
+.preview-psi-low {
+    background-color: #fee2e2;
+}
+
+.preview-psi-low #preview-psi-value {
+    color: #991b1b;
+}
+
+.preview-psi-medium {
+    background-color: #fef3c7;
+}
+
+.preview-psi-medium #preview-psi-value {
+    color: #92400e;
+}

@@ -455,6 +455,9 @@ function renderSequences(sequences) {
 
     // Update select all checkbox state
     updateSelectAllCheckbox();
+
+    // Set up row hover listeners for action buttons
+    setupRowHoverListeners();
 }
 
 /**
@@ -947,3 +950,528 @@ function restoreHistoryNameDisplay(parent, jobId, batchIndex, name) {
 window.startEditHistoryName = startEditHistoryName;
 window.handleHistoryEditKeydown = handleHistoryEditKeydown;
 window.handleHistoryEditBlur = handleHistoryEditBlur;
+
+// ============================================================================
+// Row Action Buttons (Preview & Download)
+// ============================================================================
+
+const rowActionsContainer = document.getElementById('row-actions-container');
+const previewModal = document.getElementById('preview-modal');
+const downloadVizModal = document.getElementById('download-viz-modal');
+let currentHoveredRow = null;
+let currentPreviewSeq = null;
+let currentDownloadSeq = null;
+let pendingDownloads = {};
+let downloadResults = {};
+
+/**
+ * Create floating action buttons for a row
+ */
+function createRowActionButtons() {
+    const div = document.createElement('div');
+    div.className = 'row-action-buttons';
+    div.innerHTML = `
+        <button type="button" class="row-action-btn preview-btn" data-tooltip="Preview">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+        </button>
+        <button type="button" class="row-action-btn download-btn" data-tooltip="Download">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+        </button>
+    `;
+    return div;
+}
+
+/**
+ * Position action buttons next to a row
+ */
+function positionActionButtons(row, seq) {
+    if (!rowActionsContainer) return;
+
+    // Remove existing buttons
+    rowActionsContainer.innerHTML = '';
+
+    const buttons = createRowActionButtons();
+    rowActionsContainer.appendChild(buttons);
+
+    // Position next to the row
+    const rowRect = row.getBoundingClientRect();
+    const tableContainer = document.getElementById('jobs-table-container');
+    const containerRect = tableContainer.getBoundingClientRect();
+
+    rowActionsContainer.style.top = `${rowRect.top}px`;
+    rowActionsContainer.style.left = `${containerRect.right + 8}px`;
+    rowActionsContainer.style.height = `${rowRect.height}px`;
+    rowActionsContainer.style.display = 'flex';
+    rowActionsContainer.style.alignItems = 'center';
+
+    // Show buttons
+    setTimeout(() => buttons.classList.add('visible'), 10);
+
+    // Add event listeners
+    buttons.querySelector('.preview-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPreviewModal(seq);
+    });
+
+    buttons.querySelector('.download-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDownloadVizModal(seq);
+    });
+}
+
+/**
+ * Hide action buttons
+ */
+function hideActionButtons() {
+    if (rowActionsContainer) {
+        const buttons = rowActionsContainer.querySelector('.row-action-buttons');
+        if (buttons) {
+            buttons.classList.remove('visible');
+        }
+        setTimeout(() => {
+            if (rowActionsContainer) rowActionsContainer.innerHTML = '';
+        }, 150);
+    }
+}
+
+/**
+ * Set up row hover listeners after rendering
+ */
+function setupRowHoverListeners() {
+    const rows = sequencesTableBody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        const seq = allSequences[index];
+        if (!seq) return;
+
+        row.addEventListener('mouseenter', () => {
+            if (seq.status === 'finished') {
+                currentHoveredRow = row;
+                positionActionButtons(row, seq);
+            }
+        });
+
+        row.addEventListener('mouseleave', (e) => {
+            // Check if moving to action buttons
+            const relatedTarget = e.relatedTarget;
+            if (relatedTarget && rowActionsContainer.contains(relatedTarget)) {
+                return;
+            }
+            currentHoveredRow = null;
+            hideActionButtons();
+        });
+    });
+
+    // Keep buttons visible when hovering over them
+    if (rowActionsContainer) {
+        rowActionsContainer.addEventListener('mouseenter', () => {
+            const buttons = rowActionsContainer.querySelector('.row-action-buttons');
+            if (buttons) buttons.classList.add('visible');
+        });
+
+        rowActionsContainer.addEventListener('mouseleave', () => {
+            currentHoveredRow = null;
+            hideActionButtons();
+        });
+    }
+}
+
+// ============================================================================
+// Preview Modal
+// ============================================================================
+
+/**
+ * Open preview modal for a sequence
+ */
+async function openPreviewModal(seq) {
+    currentPreviewSeq = seq;
+
+    // Show modal
+    previewModal.classList.remove('hidden');
+
+    // Update job info
+    const jobInfo = document.getElementById('preview-job-info');
+    jobInfo.textContent = `${seq.job_title || seq.job_id.substring(0, 8)} - ${seq.sequence_id}`;
+
+    // Set full result link
+    const fullLink = document.getElementById('preview-full-link');
+    if (seq.is_batch && seq.batch_index !== null) {
+        fullLink.href = `/batch/${seq.job_id}/sequence/${seq.batch_index}`;
+    } else {
+        fullLink.href = `/result/${seq.job_id}`;
+    }
+
+    // Show loading, hide content
+    document.getElementById('preview-loading').classList.remove('hidden');
+    document.getElementById('preview-content').classList.add('hidden');
+
+    try {
+        // Fetch result data
+        const url = seq.is_batch && seq.batch_index !== null
+            ? `/api/result/${seq.job_id}?batch_index=${seq.batch_index}`
+            : `/api/result/${seq.job_id}`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to load result');
+
+        const data = await response.json();
+
+        // Populate preview content
+        populatePreviewContent(data, seq);
+
+        // Load iframes
+        loadPreviewIframes(seq);
+
+        // Hide loading, show content
+        document.getElementById('preview-loading').classList.add('hidden');
+        document.getElementById('preview-content').classList.remove('hidden');
+
+    } catch (error) {
+        console.error('Error loading preview:', error);
+        document.getElementById('preview-loading').innerHTML = `
+            <p class="text-red-500">Failed to load preview. Please try again.</p>
+        `;
+    }
+}
+
+/**
+ * Populate preview content with result data
+ */
+function populatePreviewContent(data, seq) {
+    // PSI value and styling
+    const psiCard = document.getElementById('preview-psi-card');
+    const psiValue = document.getElementById('preview-psi-value');
+    const psiInterpretation = document.getElementById('preview-psi-interpretation');
+
+    const psi = data.psi;
+    psiValue.textContent = psi !== null ? psi.toFixed(3) : '-';
+
+    // Clear previous classes
+    psiCard.classList.remove('preview-psi-high', 'preview-psi-low', 'preview-psi-medium');
+
+    if (psi !== null) {
+        if (psi >= 0.7) {
+            psiCard.classList.add('preview-psi-high');
+            psiInterpretation.textContent = 'Strong Inclusion';
+        } else if (psi <= 0.3) {
+            psiCard.classList.add('preview-psi-low');
+            psiInterpretation.textContent = 'Strong Skipping';
+        } else {
+            psiCard.classList.add('preview-psi-medium');
+            psiInterpretation.textContent = 'Variable Splicing';
+        }
+    } else {
+        psiInterpretation.textContent = '';
+    }
+
+    // Structure and MFE
+    document.getElementById('preview-structure').textContent = data.structure || '-';
+    document.getElementById('preview-mfe').textContent = data.mfe !== null ? `${data.mfe.toFixed(2)} kcal/mol` : '-';
+
+    // Sequence
+    document.getElementById('preview-sequence').textContent = data.sequence || seq.sequence || '-';
+}
+
+/**
+ * Load preview iframes with visualization
+ */
+function loadPreviewIframes(seq) {
+    const silhouetteIframe = document.getElementById('preview-silhouette-iframe');
+    const heatmapIframe = document.getElementById('preview-heatmap-iframe');
+
+    const baseParams = seq.is_batch && seq.batch_index !== null
+        ? `job_id=${seq.job_id}&batch_index=${seq.batch_index}`
+        : `job_id=${seq.job_id}`;
+
+    silhouetteIframe.src = `/shiny/silhouette/?${baseParams}`;
+    heatmapIframe.src = `/shiny/heatmap/?${baseParams}`;
+
+    // Set up onload handlers
+    silhouetteIframe.onload = function() {
+        setTimeout(() => {
+            silhouetteIframe.contentWindow.postMessage({
+                type: 'setParams',
+                job_id: seq.job_id,
+                batch_index: seq.is_batch ? seq.batch_index : null
+            }, '*');
+        }, 500);
+    };
+
+    heatmapIframe.onload = function() {
+        setTimeout(() => {
+            heatmapIframe.contentWindow.postMessage({
+                type: 'setParams',
+                job_id: seq.job_id,
+                batch_index: seq.is_batch ? seq.batch_index : null
+            }, '*');
+        }, 500);
+    };
+}
+
+/**
+ * Close preview modal
+ */
+function closePreviewModal() {
+    previewModal.classList.add('hidden');
+    currentPreviewSeq = null;
+
+    // Clear iframes
+    document.getElementById('preview-silhouette-iframe').src = '';
+    document.getElementById('preview-heatmap-iframe').src = '';
+}
+
+// Preview modal close handlers
+document.getElementById('preview-close-btn')?.addEventListener('click', closePreviewModal);
+document.getElementById('preview-close-btn-footer')?.addEventListener('click', closePreviewModal);
+previewModal?.addEventListener('click', (e) => {
+    if (e.target === previewModal) closePreviewModal();
+});
+
+// ============================================================================
+// Download Visualizations Modal
+// ============================================================================
+
+/**
+ * Open download visualizations modal
+ */
+function openDownloadVizModal(seq) {
+    currentDownloadSeq = seq;
+
+    // Update job info
+    const jobInfo = document.getElementById('download-viz-job-info');
+    jobInfo.textContent = `${seq.job_title || seq.job_id.substring(0, 8)} - ${seq.sequence_id}`;
+
+    // Reset checkboxes
+    document.getElementById('download-viz-silhouette').checked = true;
+    document.getElementById('download-viz-heatmap').checked = true;
+
+    // Hide status
+    document.getElementById('download-viz-status').classList.add('hidden');
+
+    // Reset button
+    const confirmBtn = document.getElementById('download-viz-confirm-btn');
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `
+        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Download PNG
+    `;
+
+    downloadVizModal.classList.remove('hidden');
+}
+
+/**
+ * Close download visualizations modal
+ */
+function closeDownloadVizModal() {
+    downloadVizModal.classList.add('hidden');
+    currentDownloadSeq = null;
+}
+
+/**
+ * Download selected visualizations
+ */
+async function downloadSelectedViz() {
+    const seq = currentDownloadSeq;
+    if (!seq) return;
+
+    const downloadSilhouette = document.getElementById('download-viz-silhouette').checked;
+    const downloadHeatmap = document.getElementById('download-viz-heatmap').checked;
+
+    if (!downloadSilhouette && !downloadHeatmap) {
+        alert('Please select at least one visualization to download.');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('download-viz-confirm-btn');
+    const statusEl = document.getElementById('download-viz-status');
+
+    // Update UI
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = `
+        <svg class="animate-spin mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        Preparing...
+    `;
+    statusEl.textContent = 'Loading visualizations...';
+    statusEl.classList.remove('hidden');
+
+    // We need to load the iframes temporarily and then capture them
+    const baseParams = seq.is_batch && seq.batch_index !== null
+        ? `job_id=${seq.job_id}&batch_index=${seq.batch_index}`
+        : `job_id=${seq.job_id}`;
+
+    // Reset download state
+    pendingDownloads = {};
+    downloadResults = {};
+
+    // Create hidden iframes for download
+    const tempContainer = document.createElement('div');
+    tempContainer.style.cssText = 'position: fixed; left: -9999px; top: 0; width: 1200px; height: 800px;';
+    document.body.appendChild(tempContainer);
+
+    const downloads = [];
+
+    if (downloadSilhouette) {
+        const iframe = document.createElement('iframe');
+        iframe.id = 'temp-silhouette-iframe';
+        iframe.src = `/shiny/silhouette/?${baseParams}`;
+        iframe.style.cssText = 'width: 1200px; height: 600px; border: none;';
+        tempContainer.appendChild(iframe);
+        downloads.push({ type: 'silhouette', iframe });
+    }
+
+    if (downloadHeatmap) {
+        const iframe = document.createElement('iframe');
+        iframe.id = 'temp-heatmap-iframe';
+        iframe.src = `/shiny/heatmap/?${baseParams}`;
+        iframe.style.cssText = 'width: 1200px; height: 700px; border: none;';
+        tempContainer.appendChild(iframe);
+        downloads.push({ type: 'heatmap', iframe });
+    }
+
+    // Wait for iframes to load and then request downloads
+    let loadedCount = 0;
+    const totalToLoad = downloads.length;
+
+    const onIframeLoad = (type, iframe) => {
+        setTimeout(() => {
+            // Send params first
+            iframe.contentWindow.postMessage({
+                type: 'setParams',
+                job_id: seq.job_id,
+                batch_index: seq.is_batch ? seq.batch_index : null
+            }, '*');
+
+            // Then request download after a delay
+            setTimeout(() => {
+                pendingDownloads[type] = true;
+                iframe.contentWindow.postMessage({ type: 'downloadRequest' }, '*');
+            }, 1500);
+        }, 500);
+    };
+
+    downloads.forEach(({ type, iframe }) => {
+        iframe.onload = () => onIframeLoad(type, iframe);
+    });
+
+    // Listen for responses
+    const messageHandler = (event) => {
+        if (event.data && event.data.type === 'downloadResponse') {
+            const source = event.data.source;
+            downloadResults[source] = event.data;
+
+            // Check if all downloads complete
+            const pendingKeys = Object.keys(pendingDownloads);
+            const completedKeys = Object.keys(downloadResults);
+
+            if (pendingKeys.every(key => completedKeys.includes(key))) {
+                window.removeEventListener('message', messageHandler);
+
+                // Save files
+                const files = [];
+                for (const [source, result] of Object.entries(downloadResults)) {
+                    if (result.dataUrl && !result.error) {
+                        files.push({
+                            name: `${source}_${seq.sequence_id}_${seq.job_id.substring(0, 8)}.png`,
+                            dataUrl: result.dataUrl
+                        });
+                    }
+                }
+
+                // Clean up
+                document.body.removeChild(tempContainer);
+
+                if (files.length === 0) {
+                    statusEl.textContent = 'Failed to download visualizations. Please try again.';
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = `
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Download PNG
+                    `;
+                    return;
+                }
+
+                // Download files
+                files.forEach((file, index) => {
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = file.dataUrl;
+                        link.download = file.name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }, index * 300);
+                });
+
+                statusEl.textContent = `Downloaded ${files.length} file(s).`;
+                setTimeout(() => closeDownloadVizModal(), 1500);
+            }
+        }
+    };
+
+    window.addEventListener('message', messageHandler);
+
+    // Timeout after 15 seconds
+    setTimeout(() => {
+        window.removeEventListener('message', messageHandler);
+        if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+        }
+        const pendingKeys = Object.keys(pendingDownloads);
+        const completedKeys = Object.keys(downloadResults);
+        if (!pendingKeys.every(key => completedKeys.includes(key))) {
+            statusEl.textContent = 'Download timed out. Please try again.';
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Download PNG
+            `;
+        }
+    }, 15000);
+}
+
+// Download modal handlers
+document.getElementById('download-viz-cancel-btn')?.addEventListener('click', closeDownloadVizModal);
+document.getElementById('download-viz-confirm-btn')?.addEventListener('click', downloadSelectedViz);
+downloadVizModal?.addEventListener('click', (e) => {
+    if (e.target === downloadVizModal) closeDownloadVizModal();
+});
+
+// Handle scroll and resize - hide action buttons
+window.addEventListener('scroll', () => {
+    hideActionButtons();
+    currentHoveredRow = null;
+}, { passive: true });
+
+window.addEventListener('resize', () => {
+    hideActionButtons();
+    currentHoveredRow = null;
+}, { passive: true });
+
+// Keyboard event for closing modals
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (!previewModal.classList.contains('hidden')) {
+            closePreviewModal();
+        }
+        if (!downloadVizModal.classList.contains('hidden')) {
+            closeDownloadVizModal();
+        }
+    }
+});
+
+// Export functions
+window.openPreviewModal = openPreviewModal;
+window.openDownloadVizModal = openDownloadVizModal;
