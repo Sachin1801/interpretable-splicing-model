@@ -31,12 +31,13 @@ FROM python:3.10-slim-bookworm
 
 WORKDIR /app
 
-# Install runtime dependencies for matplotlib and other graphics libraries
+# Install runtime dependencies for matplotlib and ViennaRNA (libgomp for OpenMP)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6 \
     libjpeg62-turbo \
     libpng16-16 \
     libxcb1 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy ViennaRNA binaries from builder
