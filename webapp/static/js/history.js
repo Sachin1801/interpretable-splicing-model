@@ -22,6 +22,7 @@ let allSequences = [];  // Current page data
 let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: sequence object
 let showSequenceColumn = false;
 let currentSort = { column: 'created_at', order: 'desc' };
+let hideButtonsTimeout = null;
 
 // DOM Elements
 const tokenDisplay = document.getElementById('token-display');
@@ -1040,6 +1041,16 @@ function hideActionButtons() {
 }
 
 /**
+ * Clear any pending hide buttons timeout
+ */
+function clearHideButtonsTimeout() {
+    if (hideButtonsTimeout) {
+        clearTimeout(hideButtonsTimeout);
+        hideButtonsTimeout = null;
+    }
+}
+
+/**
  * Set up row hover listeners after rendering
  */
 function setupRowHoverListeners() {
@@ -1049,6 +1060,7 @@ function setupRowHoverListeners() {
         if (!seq) return;
 
         row.addEventListener('mouseenter', () => {
+            clearHideButtonsTimeout();
             if (seq.status === 'finished') {
                 currentHoveredRow = row;
                 positionActionButtons(row, seq);
@@ -1061,21 +1073,27 @@ function setupRowHoverListeners() {
             if (relatedTarget && rowActionsContainer.contains(relatedTarget)) {
                 return;
             }
-            currentHoveredRow = null;
-            hideActionButtons();
+            // Add delay to give user time to reach the buttons
+            hideButtonsTimeout = setTimeout(() => {
+                currentHoveredRow = null;
+                hideActionButtons();
+            }, 300);
         });
     });
 
     // Keep buttons visible when hovering over them
     if (rowActionsContainer) {
         rowActionsContainer.addEventListener('mouseenter', () => {
+            clearHideButtonsTimeout();
             const buttons = rowActionsContainer.querySelector('.row-action-buttons');
             if (buttons) buttons.classList.add('visible');
         });
 
         rowActionsContainer.addEventListener('mouseleave', () => {
-            currentHoveredRow = null;
-            hideActionButtons();
+            hideButtonsTimeout = setTimeout(() => {
+                currentHoveredRow = null;
+                hideActionButtons();
+            }, 300);
         });
     }
 }
