@@ -199,3 +199,243 @@ a:focus:not(:focus-visible) {
         scroll-behavior: auto;
     }
 }
+
+/* Sortable table header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable-header:hover {
+    background-color: #f3f4f6;
+}
+
+.sortable-header.sorted .sort-icons {
+    opacity: 1 !important;
+}
+
+.sortable-header.sorted .sort-neutral {
+    display: none;
+}
+
+.sortable-header.sorted.asc .sort-asc {
+    display: block;
+}
+
+.sortable-header.sorted.desc .sort-desc {
+    display: block;
+}
+
+/* Filter panel chevron rotation */
+#filter-chevron.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Collapsible panel styles */
+.collapsible-panel {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #f9fafb;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+
+.collapsible-header:hover {
+    background-color: #f3f4f6;
+}
+
+.collapsible-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.collapsible-chevron {
+    transition: transform 0.2s ease;
+    color: #6b7280;
+}
+
+.collapsible-header.expanded .collapsible-chevron {
+    transform: rotate(180deg);
+}
+
+.collapsible-content {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.collapsible-content.expanded {
+    display: block;
+}
+
+/* Variant analysis styles */
+.mutation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.mutation-table th,
+.mutation-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.mutation-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.mutation-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.delta-positive {
+    color: #059669;
+    font-weight: 500;
+}
+
+.delta-negative {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+/* Download tab styles */
+.download-checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.download-checkbox-group label:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.download-checkbox-group input[type="checkbox"]:checked + span {
+    color: #2563eb;
+}
+
+/* Loading spinner for variant analysis */
+.variant-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.variant-loading svg {
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+/* History page floating row actions */
+.row-action-buttons {
+    display: flex;
+    gap: 4px;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.row-action-buttons.visible {
+    opacity: 1;
+}
+
+.row-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    position: relative;
+}
+
+.row-action-btn:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.row-action-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Tooltip for row action buttons */
+.row-action-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: #1f2937;
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    pointer-events: none;
+    margin-bottom: 4px;
+}
+
+.row-action-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Preview modal PSI card colors */
+.preview-psi-high {
+    background-color: #dcfce7;
+}
+
+.preview-psi-high #preview-psi-value {
+    color: #166534;
+}
+
+.preview-psi-low {
+    background-color: #fee2e2;
+}
+
+.preview-psi-low #preview-psi-value {
+    color: #991b1b;
+}
+
+.preview-psi-medium {
+    background-color: #fef3c7;
+}
+
+.preview-psi-medium #preview-psi-value {
+    color: #92400e;
+}

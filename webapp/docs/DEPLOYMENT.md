@@ -15,6 +15,13 @@ This document describes the Docker containerization and CI/CD pipeline setup for
 7. [Common Modifications](#common-modifications)
 8. [Next Steps](#next-steps)
 9. [Troubleshooting](#troubleshooting)
+10. [Cloud Platform Deployment Options](#cloud-platform-deployment-options)
+    - [Why Vercel Won't Work](#why-vercel-wont-work)
+    - [Recommended Cloud Platforms](#recommended-cloud-platforms)
+    - [Railway (Recommended)](#option-a-railway-recommended)
+    - [Render](#option-b-render)
+    - [Fly.io](#option-c-flyio)
+    - [Hugging Face Spaces](#option-d-hugging-face-spaces)
 
 ---
 
@@ -875,3 +882,203 @@ docker inspect <container_id> | grep -A5 Mounts
 | Change Apache/web server | `deploy/apache-site.conf` |
 | Change server setup | `deploy/server-setup.sh` |
 | Change health check logic | `webapp/app/api/routes.py` |
+
+---
+
+## Cloud Platform Deployment Options
+
+This section evaluates serverless platforms like Vercel and provides alternative recommendations for cloud deployment.
+
+### Why Vercel Won't Work
+
+**Vercel is NOT compatible with this application.** The project has fundamental requirements that conflict with Vercel's serverless architecture:
+
+#### 1. ViennaRNA System Dependency
+- The app calls `RNAfold` (ViennaRNA) via subprocess for RNA structure prediction
+- ViennaRNA is a C library requiring system-level installation
+- **Vercel doesn't allow custom system packages** - only Node.js, Python, Go, Ruby runtimes
+
+#### 2. TensorFlow Size Exceeds Limits
+- TensorFlow 2.15: ~500-600 MB
+- **Vercel serverless function limit: 50 MB** (250 MB compressed)
+- Even with optimization, impossible to fit TensorFlow
+
+#### 3. Execution Time Limits
+- Vercel Hobby: 10 seconds max
+- Vercel Pro: 60 seconds max
+- **Mutagenesis analysis: 10-30 minutes** (210 predictions per sequence)
+- Even single predictions take 1-5 seconds (ViennaRNA subprocess)
+
+#### 4. Stateless Architecture Breaks SQLite
+- Vercel functions are stateless - filesystem resets between invocations
+- SQLite database would be lost after each request
+- Would need external database (Vercel Postgres, PlanetScale, etc.)
+
+#### 5. Model Loading Inefficiency
+- The predictor uses singleton pattern - load once, reuse
+- Serverless cold starts would reload TensorFlow model on every invocation
+- Cold start time: 10-30 seconds (unacceptable latency)
+
+---
+
+### Recommended Cloud Platforms
+
+The existing Docker setup is production-ready and works with these platforms:
+
+| Platform | Docker Support | Persistent Storage | Free Tier | Pricing |
+|----------|---------------|-------------------|-----------|---------|
+| Railway | ✅ Native | ✅ Volumes | $5/mo credit | ~$5-20/mo |
+| Render | ✅ Native | ✅ Disks | Yes (sleeps) | $7/mo always-on |
+| Fly.io | ✅ Native | ✅ Volumes | Limited | ~$5-15/mo |
+| HF Spaces | ✅ Docker SDK | ✅ Included | Yes | $9/mo (CPU) |
+
+---
+
+### Option A: Railway (Recommended)
+
+**Why Railway:**
+- Docker-native: Just connect repo, detects Dockerfile
+- Persistent volumes for SQLite
+- No cold starts (always-on containers)
+- Simple GitHub integration
+
+**Setup Steps:**
+
+1. **Sign Up**
+   ```
+   https://railway.app → Sign in with GitHub
+   ```
+
+2. **Create Project**
+   - Dashboard → New Project → Deploy from GitHub repo
+   - Select: `interpretable-splicing-model`
+   - Railway auto-detects Dockerfile
+
+3. **Configure Environment**
+   - Variables tab → Add:
+     ```
+     DEBUG=false
+     ```
+
+4. **Add Persistent Volume** (for SQLite)
+   - Settings → Volumes → Add Volume
+   - Mount path: `/app/webapp`
+   - This persists the SQLite database between deploys
+
+5. **Get Public URL**
+   - Settings → Networking → Generate Domain
+   - You'll get: `your-project.up.railway.app`
+
+6. **Optional: Custom Domain**
+   - Add your domain in Settings → Custom Domain
+   - Configure DNS CNAME record
+
+**CI/CD Integration (Optional):**
+
+```yaml
+# .github/workflows/deploy-railway.yml
+name: Deploy to Railway
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: railwayapp/railway-cli@v3
+        with:
+          railway-token: ${{ secrets.RAILWAY_TOKEN }}
+          command: up
+```
+
+---
+
+### Option B: Render
+
+**Why Render:**
+- Docker support with persistent disks
+- Free tier available (spins down after inactivity)
+- Background workers for long tasks
+- PostgreSQL add-on if migrating from SQLite
+
+**Setup Steps:**
+
+1. Create Render account at render.com
+2. New Web Service → Connect GitHub repo
+3. Select "Docker" as runtime
+4. Add disk: `/app/webapp` for database persistence
+5. Set start command (auto-detected from Dockerfile)
+6. Deploy
+
+---
+
+### Option C: Fly.io
+
+**Why Fly.io:**
+- Docker-native with global edge deployment
+- Persistent volumes
+- CLI-driven deployment (matches existing workflow)
+- Good for ML apps
+
+**Setup Steps:**
+
+```bash
+# Install flyctl
+brew install flyctl
+
+# Login
+fly auth signup  # or: fly auth login
+
+# Initialize (from project root)
+fly launch  # detects Dockerfile, creates fly.toml
+
+# Create persistent volume (1 GB)
+fly volumes create splicing_db --size 1
+
+# Update fly.toml to mount volume at /app/webapp
+# Then deploy
+fly deploy
+```
+
+---
+
+### Option D: Hugging Face Spaces
+
+**Why HF Spaces:**
+- Designed for ML applications
+- Free tier with GPU options
+- Docker support via custom Dockerfile
+- Good community visibility
+
+**Limitations:**
+- 16 GB RAM limit on free tier
+- May need to adapt for Spaces SDK expectations
+
+**Setup:**
+- Create Space → Select Docker SDK → Push Dockerfile
+
+---
+
+### Post-Deployment Verification
+
+After deployment on any platform, test these endpoints:
+
+1. `GET /api/health` - Should return 200
+2. `GET /` - Landing page loads
+3. `POST /api/predict` - Single prediction works
+4. `GET /history` - History page loads (requires predictions first)
+
+---
+
+### Migration Checklist
+
+- [ ] Choose platform (Railway recommended for quick deploy)
+- [ ] Sign up and connect GitHub
+- [ ] Deploy initial Docker container
+- [ ] Configure persistent volume for SQLite
+- [ ] Set environment variables (`DEBUG=false`)
+- [ ] Test all endpoints work
+- [ ] Optional: Add custom domain
+- [ ] Optional: Set up CI/CD auto-deploy

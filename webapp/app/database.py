@@ -24,6 +24,7 @@ Base = declarative_base()
 def init_db():
     """Initialize database tables."""
     from webapp.app.models.job import Job  # noqa: F401
+    from webapp.app.models.user import User  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

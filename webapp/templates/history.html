@@ -17,47 +17,109 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div class="flex flex-wrap gap-4 items-end">
-            <div class="flex-1 min-w-[200px]">
-                <label for="search-title" class="block text-sm font-medium text-gray-700 mb-1">Search (title or sequence)</label>
-                <input type="text" id="search-title"
-                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
-                       placeholder="Search...">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <!-- Filter Toggle Header -->
+        <button type="button" id="filter-toggle-btn"
+                class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span class="text-sm font-medium text-gray-700">Filters</span>
+                <span id="active-filter-count" class="hidden px-1.5 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">0</span>
             </div>
-            <div>
-                <label for="date-from" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                <input type="date" id="date-from"
-                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+            <svg id="filter-chevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+
+        <!-- Expandable Filter Panel -->
+        <div id="filter-panel" class="hidden border-t border-gray-200 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Job Title -->
+                <div>
+                    <label for="filter-job-title" class="block text-sm font-medium text-gray-700 mb-1">Job</label>
+                    <input type="text" id="filter-job-title"
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                           placeholder="">
+                </div>
+
+                <!-- ID -->
+                <div>
+                    <label for="filter-sequence-id" class="block text-sm font-medium text-gray-700 mb-1">ID</label>
+                    <input type="text" id="filter-sequence-id"
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                           placeholder="">
+                </div>
+
+                <!-- Sequence -->
+                <div>
+                    <label for="filter-sequence" class="block text-sm font-medium text-gray-700 mb-1">Sequence</label>
+                    <input type="text" id="filter-sequence"
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                           placeholder="">
+                </div>
+
+                <!-- Date Range -->
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label for="filter-date-from" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                        <input type="date" id="filter-date-from"
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                    </div>
+                    <div class="flex-1">
+                        <label for="filter-date-to" class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                        <input type="date" id="filter-date-to"
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- PSI Filter -->
+                <div class="flex gap-2 items-end">
+                    <div class="w-24">
+                        <label for="filter-psi-operator" class="block text-sm font-medium text-gray-700 mb-1">PSI</label>
+                        <select id="filter-psi-operator"
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                            <option value="">(any)</option>
+                            <option value="=">=</option>
+                            <option value=">">&gt;</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<">&lt;</option>
+                            <option value="<=">&lt;=</option>
+                            <option value="between">Between</option>
+                        </select>
+                    </div>
+                    <div class="w-20">
+                        <input type="number" id="filter-psi-value" step="0.001" min="0" max="1"
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                               placeholder="0.000">
+                    </div>
+                    <div id="filter-psi-value2-container" class="hidden w-20">
+                        <input type="number" id="filter-psi-value2" step="0.001" min="0" max="1"
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                               placeholder="1.000">
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="date-to" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                <input type="date" id="date-to"
-                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+
+            <!-- Filter Actions -->
+            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+                <button type="button" id="clear-filters-btn"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                    Clear
+                </button>
+                <button type="button" id="apply-filters-btn"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                    Apply Filters
+                </button>
             </div>
-            <button type="button" id="apply-filters-btn"
-                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                Apply
-            </button>
-            <button type="button" id="clear-filters-btn"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                Clear
-            </button>
         </div>
     </div>
 
     <!-- Bulk Actions Toolbar (hidden by default) -->
     <div id="bulk-actions-toolbar" class="hidden bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
-            <div class="flex items-center gap-4">
-                <span id="selection-count" class="text-sm font-medium text-primary-800">0 selected</span>
-                <button type="button" id="select-all-btn" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
-                    Select All
-                </button>
-                <button type="button" id="deselect-all-btn" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
-                    Deselect All
-                </button>
-            </div>
+            <span id="selection-count" class="text-sm font-medium text-primary-800">0 selected</span>
             <div class="flex items-center gap-2">
                 <button type="button" id="export-selected-btn"
                         class="inline-flex items-center px-3 py-1.5 border border-primary-300 text-sm font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50">
@@ -117,10 +179,46 @@
                         <th scope="col" class="px-4 py-3 text-left">
                             <input type="checkbox" id="select-all-checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                         </th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PSI</th>
+                        <th scope="col" class="sortable-header group px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="job_title">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="sort-icons opacity-0 group-hover:opacity-50 transition-opacity">
+                                    <svg class="sort-asc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    <svg class="sort-desc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="sort-neutral w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                                </span>
+                                Job
+                            </span>
+                        </th>
+                        <th scope="col" class="sortable-header group px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="sequence_id">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="sort-icons opacity-0 group-hover:opacity-50 transition-opacity">
+                                    <svg class="sort-asc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    <svg class="sort-desc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="sort-neutral w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                                </span>
+                                ID
+                            </span>
+                        </th>
+                        <th scope="col" class="sortable-header group px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="psi">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="sort-icons opacity-0 group-hover:opacity-50 transition-opacity">
+                                    <svg class="sort-asc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    <svg class="sort-desc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="sort-neutral w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                                </span>
+                                PSI
+                            </span>
+                        </th>
+                        <th scope="col" class="sortable-header group px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="created_at">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="sort-icons opacity-0 group-hover:opacity-50 transition-opacity">
+                                    <svg class="sort-asc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    <svg class="sort-desc hidden w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="sort-neutral w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                                </span>
+                                Date
+                            </span>
+                        </th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th scope="col" id="sequence-header" class="hidden px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sequence</th>
                     </tr>
@@ -212,6 +310,130 @@
         </div>
     </div>
 </div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Result Preview</h3>
+                <p id="preview-job-info" class="text-sm text-gray-500"></p>
+            </div>
+            <button type="button" id="preview-close-btn" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <!-- Loading state -->
+            <div id="preview-loading" class="flex items-center justify-center py-12">
+                <svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <!-- Content -->
+            <div id="preview-content" class="hidden space-y-6">
+                <!-- PSI and Info Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div id="preview-psi-card" class="rounded-lg p-4 text-center">
+                        <p class="text-sm font-medium text-gray-500 uppercase">Predicted PSI</p>
+                        <p id="preview-psi-value" class="text-3xl font-bold"></p>
+                        <p id="preview-psi-interpretation" class="text-sm mt-1"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase mb-1">Structure</p>
+                        <p id="preview-structure" class="font-mono text-xs break-all"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase mb-1">MFE</p>
+                        <p id="preview-mfe" class="text-xl font-bold text-gray-900"></p>
+                    </div>
+                </div>
+
+                <!-- Sequence -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-sm font-medium text-gray-500 uppercase mb-1">Sequence</p>
+                    <p id="preview-sequence" class="font-mono text-sm break-all"></p>
+                </div>
+
+                <!-- Visualizations -->
+                <div class="space-y-4">
+                    <!-- Silhouette View -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                            <h4 class="text-sm font-medium text-gray-700">Silhouette View</h4>
+                        </div>
+                        <div id="preview-silhouette-container" class="p-2" style="min-height: 400px;">
+                            <iframe id="preview-silhouette-iframe" class="w-full border-0" style="height: 450px;" title="Silhouette View"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Heat Map -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                            <h4 class="text-sm font-medium text-gray-700">Heat Map</h4>
+                        </div>
+                        <div id="preview-heatmap-container" class="p-2" style="min-height: 500px;">
+                            <iframe id="preview-heatmap-iframe" class="w-full border-0" style="height: 600px;" title="Heat Map"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+            <a id="preview-full-link" href="#" class="text-sm text-primary-600 hover:text-primary-800">
+                Open Full Result Page →
+            </a>
+            <button type="button" id="preview-close-btn-footer" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Download Visualizations Modal -->
+<div id="download-viz-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Download Visualizations</h3>
+        <p id="download-viz-job-info" class="text-sm text-gray-500 mb-4"></p>
+
+        <p class="text-sm text-gray-600 mb-4">Select the visualizations you want to download as PNG images.</p>
+
+        <div class="space-y-2 mb-6">
+            <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <input type="checkbox" id="download-viz-silhouette" value="silhouette" checked class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                <span class="ml-3 text-sm text-gray-700">Silhouette View</span>
+            </label>
+            <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <input type="checkbox" id="download-viz-heatmap" value="heatmap" checked class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                <span class="ml-3 text-sm text-gray-700">Filter Heat Map</span>
+            </label>
+        </div>
+
+        <div id="download-viz-status" class="hidden text-sm text-gray-500 mb-4"></div>
+
+        <div class="flex justify-end gap-3">
+            <button type="button" id="download-viz-cancel-btn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
+            <button type="button" id="download-viz-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 inline-flex items-center">
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Download PNG
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Row Actions Container -->
+<div id="row-actions-container" class="fixed pointer-events-none" style="z-index: 40;"></div>
 {% endblock %}
 
 {% block scripts %}

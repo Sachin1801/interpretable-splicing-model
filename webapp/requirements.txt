@@ -18,7 +18,8 @@ scipy  # Required by figutils
 # Visualization
 plotly>=5.18.0
 kaleido>=0.2.1
-shiny>=0.8.0  # PyShiny for interactive visualizations
+matplotlib>=3.8.0  # Required for PyShiny visualization apps
+shiny>=0.8.0  # PyShiny (Shiny for Python) - interactive visualizations
 
 # API Documentation
 scalar-fastapi>=1.0.0

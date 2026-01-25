@@ -31,13 +31,20 @@ class Job(Base):
 
     # User identification (NAR compliant - no login required)
     access_token = Column(String(64), nullable=True)
+    user_id = Column(String(36), nullable=True)  # Optional link to user account
     job_title = Column(String(255), nullable=True)
+
+    # Job type: 'single', 'batch', or 'mutagenesis'
+    job_type = Column(String(20), nullable=False, default="single")
 
     # Input data
     sequence = Column(Text, nullable=False)
     is_batch = Column(Boolean, default=False)
     batch_sequences = Column(Text, nullable=True)  # JSON array: [{name, sequence}, ...]
     email = Column(String(255), nullable=True)
+
+    # Mutagenesis-specific data
+    mutagenesis_results = Column(Text, nullable=True)  # JSON array of mutation results
 
     # Results (nullable until job finishes)
     psi = Column(Float, nullable=True)
@@ -58,6 +65,7 @@ class Job(Base):
         Index("idx_jobs_status", "status"),
         Index("idx_jobs_expires", "expires_at"),
         Index("idx_jobs_access_token", "access_token"),
+        Index("idx_jobs_user_id", "user_id"),
         Index("idx_jobs_created_at", "created_at"),
     )
 
@@ -128,6 +136,14 @@ class Job(Base):
     def set_force_plot_data(self, data: dict):
         """Set force plot data as JSON."""
         self.force_plot_data = json.dumps(data)
+
+    def set_mutagenesis_results(self, results: List[dict]):
+        """Set mutagenesis results as JSON."""
+        self.mutagenesis_results = json.dumps(results)
+
+    def get_mutagenesis_results(self) -> List[dict]:
+        """Get mutagenesis results from JSON."""
+        return json.loads(self.mutagenesis_results) if self.mutagenesis_results else []
 
     @staticmethod
     def get_interpretation(psi: float) -> str:
