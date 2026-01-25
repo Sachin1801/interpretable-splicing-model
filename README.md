@@ -1,3 +1,12 @@
+---
+title: RNA Splicing Predictor
+emoji: 🧬
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # interpretable-splicing-model
 Scripts for preprocessing and training the interpretable splicing model. 
 
