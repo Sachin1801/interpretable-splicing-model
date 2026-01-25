@@ -52,10 +52,10 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run -d --name test-container -p 8000:8000 splicing-model:${{ github.sha }}
+          docker run -d --name test-container -p 7860:7860 splicing-model:${{ github.sha }}
           # Wait for the app to be ready (model loading takes time)
           for i in {1..30}; do
-            if curl -sf http://localhost:8000/api/health; then
+            if curl -sf http://localhost:7860/api/health; then
               echo "Health check passed"
               docker stop test-container
               exit 0
