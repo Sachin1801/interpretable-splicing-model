@@ -107,15 +107,19 @@ if static_path.exists():
 
 # Mount PyShiny visualization apps
 if SHINY_AVAILABLE:
+    # Use dynamic port from settings (7860 for HF Spaces/Docker, can be overridden via env)
+    api_base_url = f"http://localhost:{settings.server_port}"
+    logger.info(f"Configuring Shiny apps with API base URL: {api_base_url}")
+
     try:
-        heatmap_shiny_app = create_heatmap_app(api_base_url="http://localhost:8000")
+        heatmap_shiny_app = create_heatmap_app(api_base_url=api_base_url)
         app.mount("/shiny/heatmap", heatmap_shiny_app, name="shiny_heatmap")
         logger.info("PyShiny heatmap app mounted at /shiny/heatmap")
     except Exception as e:
         logger.error(f"Failed to mount PyShiny heatmap app: {e}")
 
     try:
-        silhouette_shiny_app = create_silhouette_app(api_base_url="http://localhost:8000")
+        silhouette_shiny_app = create_silhouette_app(api_base_url=api_base_url)
         app.mount("/shiny/silhouette", silhouette_shiny_app, name="shiny_silhouette")
         logger.info("PyShiny silhouette app mounted at /shiny/silhouette")
     except Exception as e:
@@ -221,4 +225,4 @@ async def mutagenesis_result_page(request: Request, job_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=settings.server_port)

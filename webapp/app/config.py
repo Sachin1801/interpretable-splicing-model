@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     app_name: str = "Splicing Predictor"
     app_version: str = "1.0.0"
     debug: bool = False
+    server_port: int = 7860  # Port the server runs on (7860 for HF Spaces/Docker)
 
     # Paths - computed at class definition time
     # __file__ = webapp/app/config.py
