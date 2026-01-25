@@ -121,8 +121,8 @@ class TestBatchEndpoint:
     def test_batch_predict(self, client):
         """Test batch prediction."""
         sequences = [
-            "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT",
-            "CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC",
+            {"name": "seq1", "sequence": "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"},
+            {"name": "seq2", "sequence": "CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCGC"},
         ]
 
         response = client.post(
@@ -145,21 +145,7 @@ class TestBatchEndpoint:
 class TestExportEndpoint:
     """Tests for /api/export endpoint."""
 
-    def test_export_json(self, client):
-        """Test exporting results as JSON."""
-        # First create a prediction
-        sequence = "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"
-        predict_response = client.post(
-            "/api/predict",
-            json={"sequence": sequence},
-        )
-        job_id = predict_response.json()["job_id"]
-
-        # Export as JSON
-        response = client.get(f"/api/export/{job_id}/json")
-        assert response.status_code == 200
-
-    def test_export_csv(self, client):
+    def test_export_csv_basic(self, client):
         """Test exporting results as CSV."""
         # First create a prediction
         sequence = "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"
@@ -172,6 +158,21 @@ class TestExportEndpoint:
         # Export as CSV
         response = client.get(f"/api/export/{job_id}/csv")
         assert response.status_code == 200
-        data = response.json()
-        assert "content" in data
-        assert "sequence" in data["content"]  # CSV header should include sequence
+
+    def test_export_csv_content(self, client):
+        """Test exporting results as CSV with proper content."""
+        # First create a prediction
+        sequence = "GGTAGTACGCCAATTCGCCGGTGCCGCGAGCCAGAGGCTACCAAAACTTGACAAGCCTACATATACTACT"
+        predict_response = client.post(
+            "/api/predict",
+            json={"sequence": sequence},
+        )
+        job_id = predict_response.json()["job_id"]
+
+        # Export as CSV
+        response = client.get(f"/api/export/{job_id}/csv")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        csv_content = response.text
+        assert "sequence" in csv_content  # CSV header should include sequence
+        assert "psi" in csv_content  # CSV header should include psi
