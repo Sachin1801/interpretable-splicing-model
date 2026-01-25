@@ -5,10 +5,10 @@ Blue bars (upward) = Inclusion strength
 Red bars (downward) = Skipping strength
 """
 
-from shiny import App, ui, render, reactive
-import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.use('Agg')  # Must be before pyplot import for headless environments
+import matplotlib.pyplot as plt
+from shiny import App, ui, render, reactive
 import numpy as np
 import httpx
 
