@@ -1070,6 +1070,8 @@ After deployment on any platform, test these endpoints:
 3. `POST /api/predict` - Single prediction works
 4. `GET /history` - History page loads (requires predictions first)
 
+### Link : https://huggingface.co/spaces/sachin1801/splicing-predictor   
+
 ---
 
 ### Migration Checklist
