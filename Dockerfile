@@ -53,16 +53,16 @@ COPY figures/ ./figures/
 COPY output/ ./output/
 COPY data/ ./data/
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Create non-root user (HF Spaces requires user with uid 1000)
+RUN useradd -m -u 1000 user && chown -R user:user /app
+USER user
 
-# Expose port
-EXPOSE 8000
+# Expose port (HF Spaces requires 7860)
+EXPOSE 7860
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/health')" || exit 1
+    CMD python -c "import httpx; httpx.get('http://localhost:7860/api/health')" || exit 1
 
-# Run with Uvicorn
-CMD ["python", "-m", "uvicorn", "webapp.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with Uvicorn on port 7860 for HF Spaces
+CMD ["python", "-m", "uvicorn", "webapp.app.main:app", "--host", "0.0.0.0", "--port", "7860"]
