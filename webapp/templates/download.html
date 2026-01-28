@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Job History - {{ settings.app_name }}{% endblock %}
+{% block title %}Download - {{ settings.app_name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">History</h1>
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Download Results</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            Export prediction results in various formats
+        </p>
     </div>
 
     <!-- Token Entry Section -->
@@ -128,13 +132,6 @@
                     </svg>
                     Export Selected
                 </button>
-                <button type="button" id="delete-selected-btn"
-                        class="inline-flex items-center px-3 py-1.5 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
-                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete Selected
-                </button>
             </div>
         </div>
     </div>
@@ -156,7 +153,7 @@
         <h3 class="mt-2 text-sm font-medium text-gray-900">No sequences found</h3>
         <p class="mt-1 text-sm text-gray-500">No prediction sequences found for this token.</p>
         <div class="mt-6">
-            <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+            <a href="/input" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
                 Create New Prediction
             </a>
         </div>
@@ -279,147 +276,6 @@
         <div class="flex justify-end gap-3">
             <button type="button" id="export-cancel-btn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
             <button type="button" id="export-download-btn" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">Download CSV</button>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Delete Selected Sequences</h3>
-        <p class="text-sm text-gray-600 mb-2">
-            Confirm deletion of <span id="delete-count" class="font-semibold">0</span> selected sequence(s)?
-        </p>
-        <div id="delete-batch-warning" class="hidden bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-            <p class="text-sm text-yellow-800">
-                <strong>Note:</strong> Deleting sequences from a batch job will delete the entire batch job.
-            </p>
-        </div>
-        <p class="text-sm text-red-600 mb-4">This action cannot be undone.</p>
-        <div class="flex justify-end gap-3">
-            <button type="button" id="delete-cancel-btn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
-            <button type="button" id="delete-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Delete</button>
-        </div>
-    </div>
-</div>
-
-<!-- Preview Modal -->
-<div id="preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <div>
-                <h3 class="text-lg font-medium text-gray-900">Result Preview</h3>
-                <p id="preview-job-info" class="text-sm text-gray-500"></p>
-            </div>
-            <button type="button" id="preview-close-btn" class="text-gray-400 hover:text-gray-600">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="flex-1 overflow-y-auto p-6">
-            <!-- Loading state -->
-            <div id="preview-loading" class="flex items-center justify-center py-12">
-                <svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-            </div>
-
-            <!-- Content -->
-            <div id="preview-content" class="hidden space-y-6">
-                <!-- PSI and Info Row -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div id="preview-psi-card" class="rounded-lg p-4 text-center">
-                        <p class="text-sm font-medium text-gray-500 uppercase">Predicted PSI</p>
-                        <p id="preview-psi-value" class="text-3xl font-bold"></p>
-                        <p id="preview-psi-interpretation" class="text-sm mt-1"></p>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-sm font-medium text-gray-500 uppercase mb-1">Structure</p>
-                        <p id="preview-structure" class="font-mono text-xs break-all"></p>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-sm font-medium text-gray-500 uppercase mb-1">MFE</p>
-                        <p id="preview-mfe" class="text-xl font-bold text-gray-900"></p>
-                    </div>
-                </div>
-
-                <!-- Sequence -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-gray-500 uppercase mb-1">Sequence</p>
-                    <p id="preview-sequence" class="font-mono text-sm break-all"></p>
-                </div>
-
-                <!-- Visualizations -->
-                <div class="space-y-4">
-                    <!-- Silhouette View -->
-                    <div class="border border-gray-200 rounded-lg overflow-hidden">
-                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                            <h4 class="text-sm font-medium text-gray-700">Silhouette View</h4>
-                        </div>
-                        <div id="preview-silhouette-container" class="p-2" style="min-height: 400px;">
-                            <iframe id="preview-silhouette-iframe" class="w-full border-0" style="height: 450px;" title="Silhouette View"></iframe>
-                        </div>
-                    </div>
-
-                    <!-- Heat Map -->
-                    <div class="border border-gray-200 rounded-lg overflow-hidden">
-                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                            <h4 class="text-sm font-medium text-gray-700">Heat Map</h4>
-                        </div>
-                        <div id="preview-heatmap-container" class="p-2" style="min-height: 500px;">
-                            <iframe id="preview-heatmap-iframe" class="w-full border-0" style="height: 600px;" title="Heat Map"></iframe>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-            <a id="preview-full-link" href="#" class="text-sm text-primary-600 hover:text-primary-800">
-                Open Full Result Page →
-            </a>
-            <button type="button" id="preview-close-btn-footer" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Download Visualizations Modal -->
-<div id="download-viz-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Download Visualizations</h3>
-        <p id="download-viz-job-info" class="text-sm text-gray-500 mb-4"></p>
-
-        <p class="text-sm text-gray-600 mb-4">Select the visualizations to download as PNG images.</p>
-
-        <div class="space-y-2 mb-6">
-            <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <input type="checkbox" id="download-viz-silhouette" value="silhouette" checked class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                <span class="ml-3 text-sm text-gray-700">Silhouette View</span>
-            </label>
-            <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <input type="checkbox" id="download-viz-heatmap" value="heatmap" checked class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                <span class="ml-3 text-sm text-gray-700">Filter Heat Map</span>
-            </label>
-        </div>
-
-        <div id="download-viz-status" class="hidden text-sm text-gray-500 mb-4"></div>
-
-        <div class="flex justify-end gap-3">
-            <button type="button" id="download-viz-cancel-btn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
-            <button type="button" id="download-viz-confirm-btn" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 inline-flex items-center">
-                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                Download PNG
-            </button>
         </div>
     </div>
 </div>
