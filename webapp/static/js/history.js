@@ -526,15 +526,17 @@ function updateBulkActionsToolbar() {
 
     if (count > 0) {
         bulkActionsToolbar.classList.remove('hidden');
-        columnVisibility.classList.remove('hidden');
+        if (columnVisibility) columnVisibility.classList.remove('hidden');
         selectionCountEl.textContent = `${count} selected`;
     } else {
         bulkActionsToolbar.classList.add('hidden');
         // Keep column visibility visible if table is shown
-        if (!jobsTableContainer.classList.contains('hidden')) {
-            columnVisibility.classList.remove('hidden');
-        } else {
-            columnVisibility.classList.add('hidden');
+        if (columnVisibility) {
+            if (!jobsTableContainer.classList.contains('hidden')) {
+                columnVisibility.classList.remove('hidden');
+            } else {
+                columnVisibility.classList.add('hidden');
+            }
         }
     }
 }
@@ -815,7 +817,7 @@ function showLoading() {
     noJobsState.classList.add('hidden');
     jobsTableContainer.classList.add('hidden');
     pagination.classList.add('hidden');
-    columnVisibility.classList.add('hidden');
+    if (columnVisibility) columnVisibility.classList.add('hidden');
 }
 
 /**
@@ -826,7 +828,7 @@ function showNoSequences() {
     noJobsState.classList.remove('hidden');
     jobsTableContainer.classList.add('hidden');
     pagination.classList.add('hidden');
-    columnVisibility.classList.add('hidden');
+    if (columnVisibility) columnVisibility.classList.add('hidden');
     bulkActionsToolbar.classList.add('hidden');
 }
 
@@ -838,7 +840,7 @@ function showTable() {
     noJobsState.classList.add('hidden');
     jobsTableContainer.classList.remove('hidden');
     pagination.classList.remove('hidden');
-    columnVisibility.classList.remove('hidden');
+    if (columnVisibility) columnVisibility.classList.remove('hidden');
     updateBulkActionsToolbar();
 }
 

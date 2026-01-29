@@ -103,7 +103,7 @@
             <div class="mb-10">
                 <h1 class="text-3xl font-bold text-gray-900">Help & Documentation</h1>
                 <p class="mt-4 text-lg text-gray-600">
-                    Everything you need to know about the RNA Splicing Predictor
+                    Everything to know about the RNA Splicing Predictor
                 </p>
             </div>
 
@@ -117,7 +117,7 @@
                 <div id="tutorial" class="mb-8">
                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Tutorial</h3>
                     <p class="text-gray-600 mb-4">
-                        Follow these steps to make your first prediction:
+                        Follow these steps to make a first prediction:
                     </p>
 
                     <div class="space-y-6">
@@ -125,9 +125,9 @@
                         <div class="flex items-start">
                             <span class="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary-600 text-white font-bold text-sm">1</span>
                             <div class="ml-4">
-                                <h4 class="font-medium text-gray-900">Prepare Your Sequence</h4>
+                                <h4 class="font-medium text-gray-900">Prepare the Sequence</h4>
                                 <p class="text-gray-600 mt-1">
-                                    You'll need a 70-nucleotide exon sequence containing only A, C, G, T characters.
+                                    A 70-nucleotide exon sequence containing only A, C, G, T characters is required.
                                 </p>
                             </div>
                         </div>
@@ -136,9 +136,9 @@
                         <div class="flex items-start">
                             <span class="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary-600 text-white font-bold text-sm">2</span>
                             <div class="ml-4">
-                                <h4 class="font-medium text-gray-900">Enter Your Sequence</h4>
+                                <h4 class="font-medium text-gray-900">Enter the Sequence</h4>
                                 <p class="text-gray-600 mt-1">
-                                    Go to the <a href="/input" class="text-primary-600 hover:text-primary-800">Predict page</a> and paste your sequence. Use "Try Example" if you don't have a sequence.
+                                    Go to the <a href="/input" class="text-primary-600 hover:text-primary-800">Predict page</a> and paste the sequence. Use "Try Example" if no sequence is available.
                                 </p>
                             </div>
                         </div>
@@ -172,53 +172,17 @@
                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Exon Entry Requirements</h3>
 
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <div class="space-y-5">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h4 class="font-medium text-gray-900">Exactly 70 nucleotides</h4>
-                                    <p class="text-gray-600 mt-1">
-                                        The model was trained on 70nt exons. 10nt flanking sequences are added automatically.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                                    <span class="font-bold text-xs">ACGT</span>
-                                </div>
-                                <div class="ml-4">
-                                    <h4 class="font-medium text-gray-900">Valid Characters Only</h4>
-                                    <p class="text-gray-600 mt-1">
-                                        Only A, C, G, T accepted. RNA sequences (with U) should be converted to DNA (U → T).
-                                    </p>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">A</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">C</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">G</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">T</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h4 class="font-medium text-gray-900">No Spaces or Headers</h4>
-                                    <p class="text-gray-600 mt-1">
-                                        Enter raw sequence only. No FASTA headers, spaces, line breaks, or numbers.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        <ul class="space-y-4 text-gray-600">
+                            <li>
+                                <span class="font-medium text-gray-900">Exactly 70 nucleotides</span> — The model was trained on 70nt exons. 10nt flanking sequences are added automatically.
+                            </li>
+                            <li>
+                                <span class="font-medium text-gray-900">Valid characters only</span> — Only A, C, G, T accepted. RNA sequences (with U) should be converted to DNA (U → T).
+                            </li>
+                            <li>
+                                <span class="font-medium text-gray-900">No spaces or headers</span> — Enter raw sequence only. No FASTA headers, spaces, line breaks, or numbers.
+                            </li>
+                        </ul>
                     </div>
 
                     <div class="mt-4 bg-gray-50 rounded-lg p-4">
@@ -234,7 +198,7 @@
                     <h3 class="text-xl font-semibold text-gray-900 mb-4">Accepted File Upload Formats</h3>
 
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <p class="text-gray-600 mb-4">For batch predictions, you can upload files in these formats:</p>
+                        <p class="text-gray-600 mb-4">For batch predictions, files can be uploaded in these formats:</p>
 
                         <div class="space-y-4">
                             <div class="border-l-4 border-primary-500 pl-4">
@@ -270,42 +234,16 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
 
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <p class="text-gray-600 mb-4">
-                        The mutagenesis feature generates all possible single-point mutations for your sequence and predicts PSI for each variant.
+                        The mutagenesis feature generates all possible single-point mutations for the input sequence and predicts PSI for each variant.
                     </p>
 
-                    <div class="space-y-4">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                                <h4 class="font-medium text-gray-900">210 Mutations Generated</h4>
-                                <p class="text-gray-600 text-sm">70 positions x 3 alternate nucleotides per position</p>
-                            </div>
-                        </div>
+                    <ul class="space-y-3 text-gray-600 mb-6">
+                        <li><span class="font-medium text-gray-900">210 mutations generated</span> — 70 positions x 3 alternate nucleotides per position</li>
+                        <li><span class="font-medium text-gray-900">Delta PSI calculation</span> — Shows how each mutation affects splicing relative to the reference</li>
+                        <li><span class="font-medium text-gray-900">Heatmap visualization</span> — Color-coded view of mutation effects across all positions</li>
+                    </ul>
 
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                                <h4 class="font-medium text-gray-900">Delta PSI Calculation</h4>
-                                <p class="text-gray-600 text-sm">Shows how each mutation affects splicing relative to the reference</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                                <h4 class="font-medium text-gray-900">Heatmap Visualization</h4>
-                                <p class="text-gray-600 text-sm">Color-coded view of mutation effects across all positions</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6">
+                    <div>
                         <a href="/mutagenesis" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
                             Try Mutagenesis Analysis
                             <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,13 +260,8 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
                     3. Comparing Sequences
                 </h2>
 
-                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center text-gray-500 mb-4">
-                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span class="text-sm font-medium">Coming Soon</span>
-                    </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <p class="text-sm font-medium text-gray-500 mb-2">Coming Soon</p>
                     <p class="text-gray-600">
                         Sequence comparison features are planned for a future release. This will allow side-by-side comparison of multiple sequences and their predicted PSI values.
                     </p>
@@ -347,36 +280,18 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
 
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <p class="text-gray-600 mb-4">
-                            Access tokens allow you to save and retrieve your prediction history without creating an account.
+                            Access tokens allow saving and retrieving prediction history without creating an account.
                         </p>
 
-                        <div class="space-y-4">
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-green-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span class="text-gray-600">Generated automatically on first use</span>
-                            </div>
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-green-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span class="text-gray-600">Stored in your browser's local storage</span>
-                            </div>
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-green-500 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span class="text-gray-600">Use the same token across devices by copying it</span>
-                            </div>
-                        </div>
+                        <ul class="space-y-2 text-gray-600 mb-4">
+                            <li>Generated automatically on first use</li>
+                            <li>Stored in the browser's local storage</li>
+                            <li>Use the same token across devices by copying it</li>
+                        </ul>
 
-                        <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <h4 class="font-medium text-yellow-800 mb-1">Important</h4>
-                            <p class="text-sm text-yellow-700">
-                                Keep your token safe! If you clear browser data or use a new device, you'll need the token to access your history.
-                            </p>
-                        </div>
+                        <p class="text-gray-600">
+                            <span class="font-medium">Important:</span> Keep the token safe! Clearing browser data or using a new device means the token will be needed to access history.
+                        </p>
                     </div>
                 </div>
 
@@ -386,35 +301,18 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
 
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <p class="text-gray-600 mb-4">
-                            Create an account for more convenient access to your prediction history.
+                            Create an account for more convenient access to prediction history.
                         </p>
 
-                        <div class="space-y-4">
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="text-gray-600">Access history from any device</span>
-                            </div>
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="text-gray-600">Link existing token to your account</span>
-                            </div>
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 text-primary-600 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="text-gray-600">Secure password-based authentication</span>
-                            </div>
-                        </div>
+                        <ul class="space-y-2 text-gray-600 mb-4">
+                            <li>Access history from any device</li>
+                            <li>Link existing token to the account</li>
+                            <li>Secure password-based authentication</li>
+                        </ul>
 
-                        <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p class="text-sm text-blue-700">
-                                <strong>Tip:</strong> Click the "Login" button in the top navigation bar. Enter your email and password - if you don't have an account, one will be created automatically.
-                            </p>
-                        </div>
+                        <p class="text-gray-600">
+                            <span class="font-medium">Tip:</span> Click the "Login" button in the top navigation bar. Enter an email and password - if no account exists, one will be created automatically.
+                        </p>
                     </div>
                 </div>
             </section>
@@ -427,35 +325,18 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
 
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <p class="text-gray-600 mb-4">
-                        The <a href="/history" class="text-primary-600 hover:text-primary-800">History page</a> shows all your past predictions.
+                        The <a href="/history" class="text-primary-600 hover:text-primary-800">History page</a> shows all past predictions.
                     </p>
 
-                    <div class="space-y-4">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-gray-400 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <span class="text-gray-600"><strong>Search</strong> - Find predictions by job title, sequence ID, or sequence content</span>
-                        </div>
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-gray-400 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                            </svg>
-                            <span class="text-gray-600"><strong>Filter</strong> - Filter by date range or PSI value</span>
-                        </div>
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-gray-400 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span class="text-gray-600"><strong>Export</strong> - Download selected sequences as CSV</span>
-                        </div>
-                    </div>
+                    <ul class="space-y-2 text-gray-600 mb-4">
+                        <li><span class="font-medium">Search</span> — Find predictions by job title, sequence ID, or sequence content</li>
+                        <li><span class="font-medium">Filter</span> — Filter by date range or PSI value</li>
+                        <li><span class="font-medium">Export</span> — Download selected sequences as CSV</li>
+                    </ul>
 
-                    <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p class="text-sm text-blue-700">
-                            <strong>Note:</strong> Results are stored for 7 days. Download your results if you need them longer.
-                        </p>
-                    </div>
+                    <p class="text-gray-600">
+                        <span class="font-medium">Note:</span> Results are stored for 7 days. Download results if needed for longer retention.
+                    </p>
                 </div>
             </section>
 
@@ -484,24 +365,18 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
                             </thead>
                             <tbody class="divide-y divide-gray-200">
                                 <tr>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">0.8 - 1.0</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm font-medium text-green-600">High Inclusion</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">0.8 - 1.0</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">High Inclusion</td>
                                     <td class="px-6 py-4 text-sm text-gray-600">Exon almost always included</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">0.3 - 0.8</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm font-medium text-yellow-600">Variable</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">0.3 - 0.8</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">Variable</td>
                                     <td class="px-6 py-4 text-sm text-gray-600">Alternatively spliced</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">0.0 - 0.3</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm font-medium text-red-600">High Skipping</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">0.0 - 0.3</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">High Skipping</td>
                                     <td class="px-6 py-4 text-sm text-gray-600">Exon usually skipped</td>
                                 </tr>
                             </tbody>
@@ -529,12 +404,7 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
                             </div>
                             <div class="flex items-start">
                                 <span class="w-20 text-sm font-medium text-gray-500">Colors</span>
-                                <span class="flex items-center">
-                                    <span class="w-4 h-4 bg-green-500 rounded mr-1"></span>
-                                    <span class="text-gray-600 mr-4">Inclusion</span>
-                                    <span class="w-4 h-4 bg-red-500 rounded mr-1"></span>
-                                    <span class="text-gray-600">Skipping</span>
-                                </span>
+                                <span class="text-gray-600">Green indicates inclusion, red indicates skipping.</span>
                             </div>
                         </div>
                     </div>
@@ -570,7 +440,7 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
                             </svg>
                         </button>
                         <div class="faq-content hidden px-6 pb-4 text-gray-600">
-                            The model accepts DNA sequences (ACGT). Convert U to T before submission. The system will auto-convert if you paste an RNA sequence.
+                            The model accepts DNA sequences (ACGT). Convert U to T before submission. The system will auto-convert if an RNA sequence is pasted.
                         </div>
                     </div>
 
@@ -622,34 +492,19 @@ Sequence_2,CTACCACCTCCCAAGCTTACACACTGTTTGATGAAAGGTCGCCACAACGTTCCCTCACCCCTAGTCTCG
                             </svg>
                         </button>
                         <div class="faq-content hidden px-6 pb-4 text-gray-600">
-                            Results are stored for 7 days. Download your results (CSV/JSON) if you need to keep them longer.
+                            Results are stored for 7 days. Download results (CSV/JSON) for longer retention.
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Still Need Help -->
-            <section class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-2">Still Need Help?</h2>
                 <ul class="text-gray-600 space-y-2">
-                    <li class="flex items-center">
-                        <svg class="h-5 w-5 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <a href="/methodology" class="text-primary-600 hover:text-primary-800">Methodology</a> - Technical details about the model
-                    </li>
-                    <li class="flex items-center">
-                        <svg class="h-5 w-5 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                        <a href="/docs" class="text-primary-600 hover:text-primary-800">API Documentation</a> - Programmatic access
-                    </li>
-                    <li class="flex items-center">
-                        <svg class="h-5 w-5 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <a href="https://github.com/Sachin1801/interpretable-splicing-model" target="_blank" class="text-primary-600 hover:text-primary-800">GitHub</a> - Report issues or contribute
-                    </li>
+                    <li><a href="/methodology" class="text-primary-600 hover:text-primary-800">Methodology</a> — Technical details about the model</li>
+                    <li><a href="/docs" class="text-primary-600 hover:text-primary-800">API Documentation</a> — Programmatic access</li>
+                    <li><a href="https://github.com/Sachin1801/interpretable-splicing-model" target="_blank" class="text-primary-600 hover:text-primary-800">GitHub</a> — Report issues or contribute</li>
                 </ul>
             </section>
         </main>

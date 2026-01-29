@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Comparative Analysis - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-3xl font-bold text-gray-900">Comparative Analysis</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            Compare multiple exon sequences side-by-side
+        </p>
+    </div>
+
+    <!-- Coming Soon Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+        <div class="mx-auto w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Coming Soon</h2>
+
+        <p class="text-gray-600 max-w-lg mx-auto mb-8">
+            This feature will allow comparing multiple exon sequences simultaneously,
+            visualizing differences in predicted PSI values and position-specific contributions
+            across variants or related sequences.
+        </p>
+
+        <div class="bg-gray-50 rounded-lg p-6 text-left max-w-md mx-auto">
+            <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Planned Features</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Side-by-side PSI predictions for multiple sequences</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Highlight sequence differences and their impact</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Export comparison reports</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500 mb-4">In the meantime, try our other tools:</p>
+        <div class="flex justify-center space-x-4">
+            <a href="/input" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Model Visualizations
+            </a>
+            <a href="/mutagenesis" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Variant Analysis
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

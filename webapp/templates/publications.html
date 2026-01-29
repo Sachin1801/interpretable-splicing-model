@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Relevant Publications - {{ settings.app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-3xl font-bold text-gray-900">Relevant Publications</h1>
+        <p class="mt-4 text-lg text-gray-600">
+            Scientific papers related to this splicing prediction model
+        </p>
+    </div>
+
+    <!-- Primary Citation -->
+    <section class="mb-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Primary Citation</h2>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="border-l-4 border-primary-500 pl-4">
+                <p class="text-gray-900 font-medium mb-2">
+                    Machine learning for discovery: deciphering RNA splicing logic
+                </p>
+                <p class="text-gray-600 text-sm mb-3">
+                    Liao SE, Sudarshan M, and Regev O.
+                </p>
+                <p class="text-gray-500 text-sm italic mb-4">
+                    bioRxiv (2022)
+                </p>
+                <div class="flex space-x-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        Preprint
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Publications Placeholder -->
+    <section class="mb-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Related Publications</h2>
+        <div class="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <p class="text-gray-600 mb-2">Additional related publications will be added here.</p>
+            <p class="text-sm text-gray-500">Check back for updates on new research.</p>
+        </div>
+    </section>
+
+    <!-- Background Reading -->
+    <section class="mb-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Background Reading</h2>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <p class="text-gray-600 mb-4">
+                For those new to RNA splicing or machine learning in biology, the following topics provide useful background:
+            </p>
+            <ul class="space-y-2 text-gray-600">
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-gray-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Alternative splicing and its regulation</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-gray-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>RNA secondary structure prediction</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-gray-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Massively parallel reporter assays (MPRA)</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-5 w-5 text-gray-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>Interpretable machine learning models</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Navigation -->
+    <div class="border-t border-gray-200 pt-8">
+        <a href="/methodology" class="inline-flex items-center text-primary-600 hover:text-primary-800">
+            <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Scientific Methodology
+        </a>
+    </div>
+</div>
+{% endblock %}
