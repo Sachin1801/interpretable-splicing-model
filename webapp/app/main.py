@@ -178,12 +178,6 @@ async def batch_sequence_detail_page(request: Request, job_id: str, index: int):
     )
 
 
-@app.get("/about", response_class=HTMLResponse, include_in_schema=False)
-async def about_page(request: Request):
-    """Render the about page."""
-    return templates.TemplateResponse("about.html", {"request": request, "settings": settings})
-
-
 @app.get("/help", response_class=HTMLResponse, include_in_schema=False)
 async def help_page(request: Request):
     """Render the help page."""
@@ -221,6 +215,24 @@ async def mutagenesis_result_page(request: Request, job_id: str):
         "mutagenesis_result.html",
         {"request": request, "job_id": job_id, "settings": settings}
     )
+
+
+@app.get("/comparative-analysis", response_class=HTMLResponse, include_in_schema=False)
+async def comparative_analysis_page(request: Request):
+    """Render the comparative analysis page."""
+    return templates.TemplateResponse("comparative_analysis.html", {"request": request, "settings": settings})
+
+
+@app.get("/publications", response_class=HTMLResponse, include_in_schema=False)
+async def publications_page(request: Request):
+    """Render the publications page."""
+    return templates.TemplateResponse("publications.html", {"request": request, "settings": settings})
+
+
+@app.get("/download", response_class=HTMLResponse, include_in_schema=False)
+async def download_page(request: Request):
+    """Render the download page."""
+    return templates.TemplateResponse("download.html", {"request": request, "settings": settings})
 
 
 if __name__ == "__main__":

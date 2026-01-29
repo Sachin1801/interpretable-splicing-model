@@ -1805,7 +1805,7 @@ async def link_access_token(
 
     return AuthResponse(
         success=True,
-        message=f"Token linked successfully. {migrated_count} jobs now associated with your account.",
+        message=f"Token linked successfully. {migrated_count} jobs now associated with the account.",
         user=UserResponse(
             id=user.id,
             email=user.email,

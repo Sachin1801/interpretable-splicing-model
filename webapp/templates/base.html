@@ -60,24 +60,56 @@
                         <a href="/" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/' %}text-primary-600 bg-primary-50{% endif %}">
                             Home
                         </a>
-                        <a href="/input" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/input' %}text-primary-600 bg-primary-50{% endif %}">
-                            Predict
-                        </a>
-                        <a href="/mutagenesis" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/mutagenesis' %}text-primary-600 bg-primary-50{% endif %}">
-                            Mutagenesis
-                        </a>
-                        <a href="/about" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/about' %}text-primary-600 bg-primary-50{% endif %}">
-                            About
-                        </a>
-                        <a href="/methodology" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/methodology' %}text-primary-600 bg-primary-50{% endif %}">
-                            Methodology
-                        </a>
+
+                        <!-- Tools Dropdown -->
+                        <div class="relative" id="tools-dropdown-container">
+                            <button onclick="toggleToolsDropdown()" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md flex items-center {% if request.url.path in ['/input', '/mutagenesis', '/comparative-analysis'] %}text-primary-600 bg-primary-50{% endif %}">
+                                Tools
+                                <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="tools-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                <a href="/input" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/input' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Model visualizations
+                                </a>
+                                <a href="/mutagenesis" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/mutagenesis' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Variant analysis
+                                </a>
+                                <a href="/comparative-analysis" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/comparative-analysis' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Comparative analysis
+                                </a>
+                            </div>
+                        </div>
+
                         <a href="/help" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/help' %}text-primary-600 bg-primary-50{% endif %}">
                             Help
                         </a>
-                        <a href="/history" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md {% if request.url.path == '/history' %}text-primary-600 bg-primary-50{% endif %}">
-                            History
-                        </a>
+
+                        <!-- About Dropdown -->
+                        <div class="relative" id="about-dropdown-container">
+                            <button onclick="toggleAboutDropdown()" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md flex items-center {% if request.url.path in ['/methodology', '/publications', '/history', '/download'] %}text-primary-600 bg-primary-50{% endif %}">
+                                About
+                                <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="about-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                <a href="/methodology" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/methodology' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Scientific methodology
+                                </a>
+                                <a href="/publications" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/publications' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Relevant publications
+                                </a>
+                                <a href="/history" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/history' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Site history
+                                </a>
+                                <a href="/download" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if request.url.path == '/download' %}bg-primary-50 text-primary-600{% endif %}">
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+
                         <!-- Auth dropdown -->
                         <div id="auth-nav-desktop" class="relative">
                             <!-- Not logged in: show Login button -->
@@ -98,7 +130,7 @@
                                         <div class="space-y-3">
                                             <div>
                                                 <label for="auth-email" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                                                <input type="email" id="auth-email" placeholder="you@example.com"
+                                                <input type="email" id="auth-email" placeholder="user@example.com"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                                             </div>
                                             <div>
@@ -157,12 +189,40 @@
             <div class="hidden md:hidden" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Home</a>
-                    <a href="/input" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Predict</a>
-                    <a href="/mutagenesis" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Mutagenesis</a>
-                    <a href="/about" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">About</a>
-                    <a href="/methodology" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Methodology</a>
+
+                    <!-- Mobile Tools Section -->
+                    <div class="border-t border-gray-200 pt-2 mt-2">
+                        <button onclick="toggleMobileToolsMenu()" class="w-full flex items-center justify-between px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">
+                            <span>Tools</span>
+                            <svg id="mobile-tools-chevron" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="mobile-tools-menu" class="hidden pl-4 space-y-1">
+                            <a href="/input" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Model visualizations</a>
+                            <a href="/mutagenesis" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Variant analysis</a>
+                            <a href="/comparative-analysis" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Comparative analysis</a>
+                        </div>
+                    </div>
+
                     <a href="/help" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Help</a>
-                    <a href="/history" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">History</a>
+
+                    <!-- Mobile About Section -->
+                    <div class="border-t border-gray-200 pt-2 mt-2">
+                        <button onclick="toggleMobileAboutMenu()" class="w-full flex items-center justify-between px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">
+                            <span>About</span>
+                            <svg id="mobile-about-chevron" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="mobile-about-menu" class="hidden pl-4 space-y-1">
+                            <a href="/methodology" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Scientific methodology</a>
+                            <a href="/publications" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Relevant publications</a>
+                            <a href="/history" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Site history</a>
+                            <a href="/download" class="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">Download</a>
+                        </div>
+                    </div>
+
                     <!-- Auth links mobile -->
                     <div id="auth-nav-mobile" class="border-t border-gray-200 pt-2 mt-2">
                         <div id="mobile-auth-logged-out">
@@ -216,8 +276,9 @@
         </footer>
     </div>
 
-    <!-- Mobile menu toggle script -->
+    <!-- Navigation scripts -->
     <script>
+        // Mobile menu toggle
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
             const iconOpen = document.getElementById('menu-icon-open');
@@ -226,6 +287,61 @@
             iconOpen.classList.toggle('hidden');
             iconClose.classList.toggle('hidden');
         }
+
+        // Desktop dropdown functions
+        function toggleToolsDropdown() {
+            const dropdown = document.getElementById('tools-dropdown');
+            const aboutDropdown = document.getElementById('about-dropdown');
+            // Close about dropdown if open
+            aboutDropdown.classList.add('hidden');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function toggleAboutDropdown() {
+            const dropdown = document.getElementById('about-dropdown');
+            const toolsDropdown = document.getElementById('tools-dropdown');
+            // Close tools dropdown if open
+            toolsDropdown.classList.add('hidden');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Mobile dropdown functions
+        function toggleMobileToolsMenu() {
+            const menu = document.getElementById('mobile-tools-menu');
+            const chevron = document.getElementById('mobile-tools-chevron');
+            menu.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        function toggleMobileAboutMenu() {
+            const menu = document.getElementById('mobile-about-menu');
+            const chevron = document.getElementById('mobile-about-chevron');
+            menu.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const toolsContainer = document.getElementById('tools-dropdown-container');
+            const aboutContainer = document.getElementById('about-dropdown-container');
+            const toolsDropdown = document.getElementById('tools-dropdown');
+            const aboutDropdown = document.getElementById('about-dropdown');
+
+            if (toolsContainer && !toolsContainer.contains(event.target)) {
+                toolsDropdown.classList.add('hidden');
+            }
+            if (aboutContainer && !aboutContainer.contains(event.target)) {
+                aboutDropdown.classList.add('hidden');
+            }
+        });
+
+        // Close dropdowns on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.getElementById('tools-dropdown').classList.add('hidden');
+                document.getElementById('about-dropdown').classList.add('hidden');
+            }
+        });
     </script>
 
     <!-- Auth utilities (loaded on all pages) -->
