@@ -134,5 +134,6 @@ dmypy.json
 docs/testData/PointMutations.xlsx
 
 # SQLite cache database (auto-generated)
-webapp/splicing.db
 
+webapp/splicing.db
+*.db

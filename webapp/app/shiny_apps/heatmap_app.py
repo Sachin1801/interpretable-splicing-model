@@ -137,8 +137,24 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 window.addEventListener('message', function(event) {{
                     if (event.data && event.data.type === 'setParams') {{
                         console.log('[Heatmap] Received params via postMessage:', event.data);
+<<<<<<< HEAD
                         setShinyParams(event.data.job_id, event.data.batch_index);
                     }}
+=======
+                        // Wait for Shiny to be ready, then set input values
+                        if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {
+                            Shiny.setInputValue('pm_job_id', event.data.job_id);
+                            Shiny.setInputValue('pm_batch_index', event.data.batch_index);
+                        } else {
+                           
+                            // Retry after Shiny loads
+                            document.addEventListener('shiny:connected', function() {
+                                Shiny.setInputValue('pm_job_id', event.data.job_id);
+                                Shiny.setInputValue('pm_batch_index', event.data.batch_index);
+                            });
+                        }
+                    }
+>>>>>>> feat/remove-checkboxes
                     // Handle download request from parent
                     if (event.data && event.data.type === 'downloadRequest') {{
                         console.log('[Heatmap] Download requested');
@@ -195,27 +211,18 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     margin: 0;
                     padding: 16px;
                 }
-                .filter-panel {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 16px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    max-height: 600px;
-                    overflow-y: auto;
-                }
-                .filter-section h4 {
-                    margin: 0 0 8px 0;
-                    font-size: 14px;
-                    color: #374151;
-                }
-                .filter-section {
-                    margin-bottom: 16px;
-                }
                 .heatmap-container {
                     background: white;
                     border-radius: 8px;
-                    padding: 16px;
+                    padding: 12px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    
+                    display: flex;
+                    justify-content: center;
+                }
+                .heatmap-container .js-plotly-plot{
+                    width: 100%;
+                    max-width: 1100px;
                 }
                 .error-message {
                     color: #dc2626;
@@ -231,34 +238,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
         ),
         ui.row(
             ui.column(
-                3,
-                ui.div(
-                    {"class": "filter-panel"},
-                    ui.h4("Filter × Position Heatmap"),
-                    ui.p("Blue = Inclusion, Red = Skipping",
-                         style="font-size: 12px; color: #6b7280; margin-bottom: 12px;"),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Inclusion Filters", style="color: #2563eb;"),
-                        ui.output_ui("inclusion_checkboxes"),
-                    ),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Skipping Filters", style="color: #dc2626;"),
-                        ui.output_ui("skipping_checkboxes"),
-                    ),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Structure Filters"),
-                        ui.output_ui("structure_checkboxes"),
-                    ),
-                    ui.hr(),
-                    ui.input_action_button("select_all", "Select All", class_="btn-sm"),
-                    ui.input_action_button("deselect_all", "Deselect All", class_="btn-sm"),
-                ),
-            ),
-            ui.column(
-                9,
+                12,
                 ui.div(
                     {"class": "heatmap-container"},
                     ui.output_ui("heatmap_plot"),
@@ -278,6 +258,9 @@ def create_app(api_base_url: str = "http://localhost:8000"):
         @reactive.event(input.pm_job_id)
         async def on_params_received():
             """Triggered when params are received via postMessage."""
+
+            
+
             job_id = input.pm_job_id()
             batch_index = input.pm_batch_index()
             print(f"[Heatmap Server] on_params_received triggered: job_id={job_id}, batch_index={batch_index}", flush=True)
@@ -292,12 +275,14 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
             try:
                 url = f"{api_base_url}/api/vis_data/{job_id}"
+                
                 if batch_index is not None:
                     url += f"?batch_index={batch_index}"
 
                 print(f"[Heatmap Server] Making API request to: {url}", flush=True)
 
                 async with httpx.AsyncClient(timeout=60.0) as client:
+                    print(f"[Heatmap] GET {url}", flush=True)
                     response = await client.get(url)
                     print(f"[Heatmap Server] API response status: {response.status_code}", flush=True)
                     response.raise_for_status()
@@ -317,80 +302,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 traceback.print_exc()
                 error_message.set(error_msg)
 
-        @output
-        @render.ui
-        def inclusion_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
 
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-
-            return ui.input_checkbox_group(
-                "incl_filters",
-                None,
-                choices={f: f for f in incl_filters},
-                selected=incl_filters,
-            )
-
-        @output
-        @render.ui
-        def skipping_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
-
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-
-            return ui.input_checkbox_group(
-                "skip_filters",
-                None,
-                choices={f: f for f in skip_filters},
-                selected=skip_filters,
-            )
-
-        @output
-        @render.ui
-        def structure_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
-
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            struct_filters = [f for f in all_filters if "struct" in f]
-
-            return ui.input_checkbox_group(
-                "struct_filters",
-                None,
-                choices={f: f for f in struct_filters},
-                selected=struct_filters,
-            )
-
-        @reactive.Effect
-        @reactive.event(input.select_all)
-        def select_all_filters():
-            data = vis_data.get()
-            if data:
-                children = data["nucleotide_activations"]["children"]
-                all_filters = list_all_filters_collapsed(children)
-                incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-                skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-                struct_filters = [f for f in all_filters if "struct" in f]
-                ui.update_checkbox_group("incl_filters", selected=incl_filters)
-                ui.update_checkbox_group("skip_filters", selected=skip_filters)
-                ui.update_checkbox_group("struct_filters", selected=struct_filters)
-
-        @reactive.Effect
-        @reactive.event(input.deselect_all)
-        def deselect_all_filters():
-            ui.update_checkbox_group("incl_filters", selected=[])
-            ui.update_checkbox_group("skip_filters", selected=[])
-            ui.update_checkbox_group("struct_filters", selected=[])
 
         @reactive.Effect
         def trigger_initial_heatmap():
@@ -399,12 +311,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             if data:
                 children = data["nucleotide_activations"]["children"]
                 all_filters = list_all_filters_collapsed(children)
-                incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-                skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-                struct_filters = [f for f in all_filters if "struct" in f]
-                ui.update_checkbox_group("incl_filters", selected=incl_filters)
-                ui.update_checkbox_group("skip_filters", selected=skip_filters)
-                ui.update_checkbox_group("struct_filters", selected=struct_filters)
+
 
         @output
         @render.ui
@@ -420,42 +327,16 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             # Get all available filters for defaults
             children = data["nucleotide_activations"]["children"]
             available_filters = list_all_filters_collapsed(children)
-            default_incl = [f for f in available_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-            default_skip = [f for f in available_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-            default_struct = [f for f in available_filters if "struct" in f]
-
-            # Get selected filters - default to all if inputs not yet available
-            try:
-                incl_selected = list(input.incl_filters()) if input.incl_filters() else default_incl
-            except Exception:
-                incl_selected = default_incl
-            try:
-                skip_selected = list(input.skip_filters()) if input.skip_filters() else default_skip
-            except Exception:
-                skip_selected = default_skip
-            try:
-                struct_selected = list(input.struct_filters()) if input.struct_filters() else default_struct
-            except Exception:
-                struct_selected = default_struct
-
-            all_selected = set(incl_selected + skip_selected + struct_selected)
-
-            if not all_selected:
-                return ui.div(
-                    {"class": "loading"},
-                    "Select at least one filter to display the heatmap."
-                )
 
             # Extract data
             full_seq = data["sequence"]
             exon = data["exon"]
             L = len(full_seq)
 
-            # Filter to only selected filters
-            filters = [f for f in available_filters if f in all_selected]
+            
 
             # Build signed matrix
-            M = build_signed_filter_matrix_collapsed(children, L, filters)
+            M = build_signed_filter_matrix_collapsed(children, L, available_filters)
 
             # Get exon boundaries for highlighting
             start = full_seq.find(exon.replace("U", "T"))
@@ -468,7 +349,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             # Setup display
             x_pos = list(range(L))
             x_bases = list(full_seq)
-            filters_rev = list(reversed(filters))
+            filters_rev = list(reversed(available_filters))
             M_rev = M[::-1, :]
 
             # Symmetric z range so 0 is white
@@ -518,9 +399,9 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     )
 
             fig.update_layout(
-                height=max(650, 18 * len(filters_rev) + 180),
-                width=1050,
-                margin=dict(l=130, r=20, t=80, b=30),
+                height=max(450, 18 * len(filters_rev) + 180),
+               
+                margin=dict(l=110, r=20, t=80, b=30),
                 xaxis=dict(
                     side="top",
                     tickmode="array",
@@ -535,18 +416,25 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     categoryarray=filters_rev,
                 ),
             )
+            
 
             # Convert to HTML with download button enabled
             html_content = fig.to_html(
                 full_html=False,
-                include_plotlyjs="cdn",
+                include_plotlyjs=True,
                 config={
                     "responsive": True,
                     "toImageButtonOptions": {
                         "format": "svg",
                         "filename": "heatmap_view",
+<<<<<<< HEAD
                         "height": 700,
                         "width": 1200,
+=======
+                        "height": 500,
+                        "width": 1100,
+                        "scale": 2
+>>>>>>> feat/remove-checkboxes
                     },
                     "displayModeBar": True,
                     "modeBarButtonsToAdd": ["toImage"],
