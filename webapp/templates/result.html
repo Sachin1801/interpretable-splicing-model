@@ -262,10 +262,34 @@
                             <table class="mutation-table">
                                 <thead class="sticky top-0">
                                     <tr>
-                                        <th class="cursor-pointer" onclick="sortMutationTable('position')">Position</th>
-                                        <th class="cursor-pointer" onclick="sortMutationTable('mutation_label')">Mutation</th>
-                                        <th class="cursor-pointer" onclick="sortMutationTable('psi')">PSI</th>
-                                        <th class="cursor-pointer" onclick="sortMutationTable('delta_psi')">ΔPSI</th>
+                                        <th class="sortable sorted asc" data-sort="position" onclick="sortMutationTable('position')">
+                                            Position
+                                            <span class="sort-icon">
+                                                <svg class="sort-asc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                <svg class="sort-desc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                            </span>
+                                        </th>
+                                        <th class="sortable" data-sort="mutation_label" onclick="sortMutationTable('mutation_label')">
+                                            Mutation
+                                            <span class="sort-icon">
+                                                <svg class="sort-asc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                <svg class="sort-desc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                            </span>
+                                        </th>
+                                        <th class="sortable" data-sort="psi" onclick="sortMutationTable('psi')">
+                                            PSI
+                                            <span class="sort-icon">
+                                                <svg class="sort-asc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                <svg class="sort-desc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                            </span>
+                                        </th>
+                                        <th class="sortable" data-sort="delta_psi" onclick="sortMutationTable('delta_psi')">
+                                            ΔPSI
+                                            <span class="sort-icon">
+                                                <svg class="sort-asc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                <svg class="sort-desc" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                            </span>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody id="mutations-table-body">
@@ -279,7 +303,7 @@
             <!-- Download Panel -->
             <div id="panel-download" role="tabpanel" aria-labelledby="tab-download" class="p-6 hidden">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Export Visualizations</h3>
-                <p class="text-sm text-gray-500 mb-6">Select the visualizations to download as PNG images.</p>
+                <p class="text-sm text-gray-500 mb-6">Select the visualizations to download as SVG images.</p>
 
                 <div class="download-checkbox-group mb-6">
                     <label>
@@ -301,7 +325,7 @@
                         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                         </svg>
-                        Download Selected (PNG)
+                        Download Selected (SVG)
                     </button>
                 </div>
 
@@ -321,27 +345,6 @@
             </div>
         </div>
 
-        <!-- Actions -->
-        <div class="flex flex-wrap gap-3">
-            <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                New Prediction
-            </a>
-            <a href="/api/export/{{ job_id }}/csv" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download CSV
-            </a>
-            <button onclick="copyLink()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-                Copy Link
-            </button>
-        </div>
     </div>
 
     <!-- Error State -->
@@ -637,7 +640,7 @@
         const btn = document.getElementById('download-btn');
         const status = document.getElementById('download-status');
         btn.disabled = false;
-        btn.innerHTML = `<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Download Selected (PNG)`;
+        btn.innerHTML = `<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Download Selected (SVG)`;
 
         if (files.length === 0) {
             status.textContent = 'No visualizations could be downloaded. Make sure the visualizations have loaded.';
@@ -650,7 +653,7 @@
             setTimeout(() => {
                 const link = document.createElement('a');
                 link.href = file.dataUrl;
-                link.download = file.name;
+                link.download = file.name.replace('.png', '.svg');
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -694,7 +697,7 @@
             // Variant heatmap is on the same page, capture directly
             const plotDiv = document.getElementById('variant-heatmap');
             if (plotDiv && plotDiv.data) {
-                Plotly.toImage(plotDiv, { format: 'png', width: 1400, height: 300, scale: 2 })
+                Plotly.toImage(plotDiv, { format: 'svg', width: 1400, height: 300 })
                     .then(dataUrl => {
                         downloadResults['variant'] = { dataUrl: dataUrl };
                         pendingDownloads['variant'] = true;
@@ -712,12 +715,12 @@
         }, 10000);
     }
 
-    // Download variant heatmap as PNG (standalone)
+    // Download variant heatmap as SVG (standalone)
     function downloadVariantHeatmap() {
         const plotDiv = document.getElementById('variant-heatmap');
         if (plotDiv && plotDiv.data) {
             Plotly.downloadImage(plotDiv, {
-                format: 'png',
+                format: 'svg',
                 width: 1400,
                 height: 300,
                 filename: `variant_heatmap_${jobId}`
@@ -809,6 +812,9 @@
             mutationSortAsc = true;
         }
 
+        // Update sort indicators
+        updateMutationSortIndicators();
+
         const tbody = document.getElementById('mutations-table-body');
         const rows = Array.from(tbody.querySelectorAll('tr'));
 
@@ -835,6 +841,17 @@
         });
 
         rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Update mutation table sort indicators (Overleaf-style)
+    function updateMutationSortIndicators() {
+        document.querySelectorAll('.mutation-table th.sortable').forEach(th => {
+            const column = th.dataset.sort;
+            th.classList.remove('sorted', 'asc', 'desc');
+            if (column === mutationSortColumn) {
+                th.classList.add('sorted', mutationSortAsc ? 'asc' : 'desc');
+            }
+        });
     }
 
     // Filter mutations table

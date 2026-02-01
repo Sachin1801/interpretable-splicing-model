@@ -200,7 +200,7 @@ a:focus:not(:focus-visible) {
     }
 }
 
-/* Sortable table header styles */
+/* Sortable table header styles - Overleaf style */
 .sortable-header {
     cursor: pointer;
     user-select: none;
@@ -210,19 +210,23 @@ a:focus:not(:focus-visible) {
     background-color: #f3f4f6;
 }
 
-.sortable-header.sorted .sort-icons {
-    opacity: 1 !important;
+/* Hide all sort icons by default */
+.sortable-header .sort-icon {
+    display: inline-flex;
+    align-items: center;
 }
 
-.sortable-header.sorted .sort-neutral {
+.sortable-header .sort-icon svg {
     display: none;
 }
 
-.sortable-header.sorted.asc .sort-asc {
+/* Show up arrow when sorted ascending */
+.sortable-header.sorted.asc .sort-icon .sort-asc {
     display: block;
 }
 
-.sortable-header.sorted.desc .sort-desc {
+/* Show down arrow when sorted descending */
+.sortable-header.sorted.desc .sort-icon .sort-desc {
     display: block;
 }
 
@@ -438,4 +442,128 @@ a:focus:not(:focus-visible) {
 
 .preview-psi-medium #preview-psi-value {
     color: #92400e;
+}
+
+/* Toast notification styles */
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    pointer-events: auto;
+    animation: toast-slide-up 0.3s ease-out;
+}
+
+.toast.success {
+    background-color: #10b981;
+    color: white;
+}
+
+.toast.error {
+    background-color: #ef4444;
+    color: white;
+}
+
+.toast.info {
+    background-color: #3b82f6;
+    color: white;
+}
+
+@keyframes toast-slide-up {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toast-slide-down {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+.toast.hiding {
+    animation: toast-slide-down 0.3s ease-in forwards;
+}
+
+/* Table action button styles (inline) */
+.table-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    color: #6b7280;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.table-action-btn:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.table-action-btn:disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+
+.table-action-btn:disabled:hover {
+    background-color: transparent;
+}
+
+.table-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.table-action-btn.delete-btn:hover {
+    color: #dc2626;
+    background-color: #fef2f2;
+}
+
+/* Mutation table sortable headers - Overleaf style */
+.mutation-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.mutation-table th.sortable:hover {
+    background-color: #f3f4f6;
+}
+
+.mutation-table th .sort-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.mutation-table th .sort-icon svg {
+    display: none;
+    width: 12px;
+    height: 12px;
+}
+
+.mutation-table th.sorted.asc .sort-icon .sort-asc {
+    display: block;
+}
+
+.mutation-table th.sorted.desc .sort-icon .sort-desc {
+    display: block;
 }

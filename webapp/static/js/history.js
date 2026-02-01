@@ -22,7 +22,6 @@ let allSequences = [];  // Current page data
 let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: sequence object
 let showSequenceColumn = false;
 let currentSort = { column: 'created_at', order: 'desc' };
-let hideButtonsTimeout = null;
 
 // DOM Elements
 const tokenDisplay = document.getElementById('token-display');
@@ -388,7 +387,8 @@ function getSelectionKey(seq) {
 function renderSequences(sequences) {
     sequencesTableBody.innerHTML = '';
 
-    for (const seq of sequences) {
+    for (let i = 0; i < sequences.length; i++) {
+        const seq = sequences[i];
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 cursor-pointer';
 
@@ -411,6 +411,8 @@ function renderSequences(sequences) {
         const seqDisplay = seq.sequence.length > 20
             ? seq.sequence.substring(0, 20) + '...'
             : seq.sequence;
+
+        const isFinished = seq.status === 'finished';
 
         row.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
@@ -436,6 +438,31 @@ function renderSequences(sequences) {
             <td class="px-4 py-3 whitespace-nowrap text-sm font-mono ${seq.psi !== null ? 'text-gray-900' : 'text-gray-400'}">${psiDisplay}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${date}</td>
             <td class="px-4 py-3 whitespace-nowrap">${statusBadge}</td>
+            <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                <div class="flex items-center gap-1">
+                    <button type="button" class="table-action-btn preview-btn" title="Preview" data-index="${i}" ${!isFinished ? 'disabled' : ''}>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                    <button type="button" class="table-action-btn copy-btn" title="Copy Job ID" data-job-id="${seq.job_id}">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                    </button>
+                    <button type="button" class="table-action-btn download-btn" title="Download" data-index="${i}" ${!isFinished ? 'disabled' : ''}>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
+                    <button type="button" class="table-action-btn delete-btn" title="Delete" data-index="${i}">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </td>
             <td class="seq-col px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-500 ${showSequenceColumn ? '' : 'hidden'}">
                 <span title="${escapeHtml(seq.sequence)}">${escapeHtml(seqDisplay)}</span>
             </td>
@@ -451,14 +478,44 @@ function renderSequences(sequences) {
             toggleSelection(key, seq);
         });
 
+        // Action button event listeners
+        const previewBtn = row.querySelector('.preview-btn');
+        if (previewBtn && !previewBtn.disabled) {
+            previewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openPreviewModal(seq);
+            });
+        }
+
+        const copyBtn = row.querySelector('.copy-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyJobId(seq.job_id);
+            });
+        }
+
+        const downloadBtn = row.querySelector('.download-btn');
+        if (downloadBtn && !downloadBtn.disabled) {
+            downloadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openDownloadVizModal(seq);
+            });
+        }
+
+        const deleteBtn = row.querySelector('.delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteSingleJob(seq);
+            });
+        }
+
         sequencesTableBody.appendChild(row);
     }
 
     // Update select all checkbox state
     updateSelectAllCheckbox();
-
-    // Set up row hover listeners for action buttons
-    setupRowHoverListeners();
 }
 
 /**
@@ -692,46 +749,7 @@ function closeDeleteModal() {
     deleteModal.classList.add('hidden');
 }
 
-/**
- * Delete selected sequences (deletes entire jobs)
- */
-async function deleteSelected() {
-    const token = TokenManager.getToken();
-    if (!token) {
-        alert('No access token found');
-        return;
-    }
-
-    // Collect unique job IDs to delete
-    const jobIds = new Set();
-    for (const seq of selectedItems.values()) {
-        jobIds.add(seq.job_id);
-    }
-
-    try {
-        // Delete each job
-        for (const jobId of jobIds) {
-            const response = await fetch(`/api/jobs/${jobId}?access_token=${encodeURIComponent(token)}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                console.error(`Failed to delete job ${jobId}:`, error);
-            }
-        }
-
-        // Clear selection and reload
-        selectedItems.clear();
-        updateBulkActionsToolbar();
-        closeDeleteModal();
-        loadSequences();
-
-    } catch (error) {
-        console.error('Error deleting sequences:', error);
-        alert('Failed to delete some sequences: ' + error.message);
-    }
-}
+// deleteSelected function is defined in the Toast Notifications section above
 
 /**
  * Get status badge HTML
@@ -855,6 +873,184 @@ function escapeHtml(text) {
 }
 
 // ============================================================================
+// Toast Notifications
+// ============================================================================
+
+/**
+ * Show a toast notification
+ */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            ${type === 'success'
+                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+                : type === 'error'
+                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
+                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+        </svg>
+        <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+/**
+ * Copy job ID to clipboard
+ */
+async function copyJobId(jobId) {
+    try {
+        await navigator.clipboard.writeText(jobId);
+        showToast('Job ID copied to clipboard', 'success');
+    } catch (error) {
+        console.error('Failed to copy:', error);
+        showToast('Failed to copy Job ID', 'error');
+    }
+}
+
+/**
+ * Delete a single job with confirmation
+ */
+function deleteSingleJob(seq) {
+    // Check if delete modal exists (not present on download page)
+    if (!deleteModal) {
+        console.warn('Delete modal not available on this page');
+        return;
+    }
+
+    // Set this single item as the only selected item for deletion
+    const key = getSelectionKey(seq);
+
+    // Temporarily store for deletion
+    window._singleDeleteSeq = seq;
+
+    // Update count display
+    if (deleteCountEl) {
+        deleteCountEl.textContent = '1';
+    }
+
+    // Show batch warning if applicable
+    if (deleteBatchWarning) {
+        if (seq.is_batch) {
+            deleteBatchWarning.classList.remove('hidden');
+        } else {
+            deleteBatchWarning.classList.add('hidden');
+        }
+    }
+
+    // Show the delete modal
+    deleteModal.classList.remove('hidden');
+}
+
+// Store reference to original delete function
+const originalDeleteSelected = deleteSelected;
+
+/**
+ * Override deleteSelected to handle single deletion
+ */
+async function deleteSelected() {
+    const token = TokenManager.getToken();
+    if (!token) {
+        alert('No access token found');
+        return;
+    }
+
+    // Check if this is a single delete
+    if (window._singleDeleteSeq) {
+        const seq = window._singleDeleteSeq;
+        window._singleDeleteSeq = null;
+
+        try {
+            let response;
+            // For batch sequences, delete only the single sequence
+            if (seq.is_batch && seq.batch_index !== null && seq.batch_index !== undefined) {
+                response = await fetch(`/api/batch/${seq.job_id}/sequence/${seq.batch_index}?access_token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+            } else {
+                // For single jobs, delete the entire job
+                response = await fetch(`/api/jobs/${seq.job_id}?access_token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+            }
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error(`Failed to delete:`, error);
+                showToast('Failed to delete sequence', 'error');
+            } else {
+                showToast('Sequence deleted successfully', 'success');
+            }
+
+            closeDeleteModal();
+            loadSequences();
+        } catch (error) {
+            console.error('Error deleting:', error);
+            showToast('Failed to delete: ' + error.message, 'error');
+        }
+        return;
+    }
+
+    // Otherwise use bulk delete logic - delete individual sequences from batch jobs
+    let deletedCount = 0;
+    const errors = [];
+
+    for (const seq of selectedItems.values()) {
+        try {
+            let response;
+            if (seq.is_batch && seq.batch_index !== null && seq.batch_index !== undefined) {
+                response = await fetch(`/api/batch/${seq.job_id}/sequence/${seq.batch_index}?access_token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+            } else {
+                response = await fetch(`/api/jobs/${seq.job_id}?access_token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+            }
+
+            if (!response.ok) {
+                const error = await response.json();
+                errors.push(error.detail || 'Unknown error');
+            } else {
+                deletedCount++;
+            }
+        } catch (error) {
+            errors.push(error.message);
+        }
+    }
+
+    selectedItems.clear();
+    updateBulkActionsToolbar();
+    closeDeleteModal();
+
+    if (errors.length > 0) {
+        showToast(`Deleted ${deletedCount} sequence(s), ${errors.length} failed`, 'error');
+    } else {
+        showToast(`Deleted ${deletedCount} sequence(s) successfully`, 'success');
+    }
+    loadSequences();
+}
+
+// Export functions globally
+window.showToast = showToast;
+window.copyJobId = copyJobId;
+window.deleteSingleJob = deleteSingleJob;
+
+// ============================================================================
 // Inline Name Editing for Batch Sequences
 // ============================================================================
 
@@ -958,147 +1154,12 @@ window.handleHistoryEditBlur = handleHistoryEditBlur;
 // Row Action Buttons (Preview & Download)
 // ============================================================================
 
-const rowActionsContainer = document.getElementById('row-actions-container');
 const previewModal = document.getElementById('preview-modal');
 const downloadVizModal = document.getElementById('download-viz-modal');
-let currentHoveredRow = null;
 let currentPreviewSeq = null;
 let currentDownloadSeq = null;
 let pendingDownloads = {};
 let downloadResults = {};
-
-/**
- * Create floating action buttons for a row
- */
-function createRowActionButtons() {
-    const div = document.createElement('div');
-    div.className = 'row-action-buttons';
-    div.innerHTML = `
-        <button type="button" class="row-action-btn preview-btn" data-tooltip="Preview">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        </button>
-        <button type="button" class="row-action-btn download-btn" data-tooltip="Download">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-        </button>
-    `;
-    return div;
-}
-
-/**
- * Position action buttons next to a row
- */
-function positionActionButtons(row, seq) {
-    if (!rowActionsContainer) return;
-
-    // Remove existing buttons
-    rowActionsContainer.innerHTML = '';
-
-    const buttons = createRowActionButtons();
-    rowActionsContainer.appendChild(buttons);
-
-    // Position next to the row
-    const rowRect = row.getBoundingClientRect();
-    const tableContainer = document.getElementById('jobs-table-container');
-    const containerRect = tableContainer.getBoundingClientRect();
-
-    rowActionsContainer.style.top = `${rowRect.top}px`;
-    rowActionsContainer.style.left = `${containerRect.right + 8}px`;
-    rowActionsContainer.style.height = `${rowRect.height}px`;
-    rowActionsContainer.style.display = 'flex';
-    rowActionsContainer.style.alignItems = 'center';
-
-    // Show buttons
-    setTimeout(() => buttons.classList.add('visible'), 10);
-
-    // Add event listeners
-    buttons.querySelector('.preview-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openPreviewModal(seq);
-    });
-
-    buttons.querySelector('.download-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openDownloadVizModal(seq);
-    });
-}
-
-/**
- * Hide action buttons
- */
-function hideActionButtons() {
-    if (rowActionsContainer) {
-        const buttons = rowActionsContainer.querySelector('.row-action-buttons');
-        if (buttons) {
-            buttons.classList.remove('visible');
-        }
-        setTimeout(() => {
-            if (rowActionsContainer) rowActionsContainer.innerHTML = '';
-        }, 150);
-    }
-}
-
-/**
- * Clear any pending hide buttons timeout
- */
-function clearHideButtonsTimeout() {
-    if (hideButtonsTimeout) {
-        clearTimeout(hideButtonsTimeout);
-        hideButtonsTimeout = null;
-    }
-}
-
-/**
- * Set up row hover listeners after rendering
- */
-function setupRowHoverListeners() {
-    const rows = sequencesTableBody.querySelectorAll('tr');
-    rows.forEach((row, index) => {
-        const seq = allSequences[index];
-        if (!seq) return;
-
-        row.addEventListener('mouseenter', () => {
-            clearHideButtonsTimeout();
-            if (seq.status === 'finished') {
-                currentHoveredRow = row;
-                positionActionButtons(row, seq);
-            }
-        });
-
-        row.addEventListener('mouseleave', (e) => {
-            // Check if moving to action buttons
-            const relatedTarget = e.relatedTarget;
-            if (relatedTarget && rowActionsContainer.contains(relatedTarget)) {
-                return;
-            }
-            // Add delay to give user time to reach the buttons
-            hideButtonsTimeout = setTimeout(() => {
-                currentHoveredRow = null;
-                hideActionButtons();
-            }, 300);
-        });
-    });
-
-    // Keep buttons visible when hovering over them
-    if (rowActionsContainer) {
-        rowActionsContainer.addEventListener('mouseenter', () => {
-            clearHideButtonsTimeout();
-            const buttons = rowActionsContainer.querySelector('.row-action-buttons');
-            if (buttons) buttons.classList.add('visible');
-        });
-
-        rowActionsContainer.addEventListener('mouseleave', () => {
-            hideButtonsTimeout = setTimeout(() => {
-                currentHoveredRow = null;
-                hideActionButtons();
-            }, 300);
-        });
-    }
-}
 
 // ============================================================================
 // Preview Modal
@@ -1108,6 +1169,12 @@ function setupRowHoverListeners() {
  * Open preview modal for a sequence
  */
 async function openPreviewModal(seq) {
+    // Check if preview modal exists (not present on download page)
+    if (!previewModal) {
+        console.warn('Preview modal not available on this page');
+        return;
+    }
+
     currentPreviewSeq = seq;
 
     // Show modal
@@ -1168,12 +1235,13 @@ function populatePreviewContent(data, seq) {
     const psiInterpretation = document.getElementById('preview-psi-interpretation');
 
     const psi = data.psi;
-    psiValue.textContent = psi !== null ? psi.toFixed(3) : '-';
+    // Use != null to catch both null and undefined
+    psiValue.textContent = psi != null ? psi.toFixed(3) : '-';
 
     // Clear previous classes
     psiCard.classList.remove('preview-psi-high', 'preview-psi-low', 'preview-psi-medium');
 
-    if (psi !== null) {
+    if (psi != null) {
         if (psi >= 0.7) {
             psiCard.classList.add('preview-psi-high');
             psiInterpretation.textContent = 'Strong Inclusion';
@@ -1188,9 +1256,9 @@ function populatePreviewContent(data, seq) {
         psiInterpretation.textContent = '';
     }
 
-    // Structure and MFE
+    // Structure and MFE - use != null to catch both null and undefined
     document.getElementById('preview-structure').textContent = data.structure || '-';
-    document.getElementById('preview-mfe').textContent = data.mfe !== null ? `${data.mfe.toFixed(2)} kcal/mol` : '-';
+    document.getElementById('preview-mfe').textContent = data.mfe != null ? `${data.mfe.toFixed(2)} kcal/mol` : '-';
 
     // Sequence
     document.getElementById('preview-sequence').textContent = data.sequence || seq.sequence || '-';
@@ -1259,11 +1327,19 @@ previewModal?.addEventListener('click', (e) => {
  * Open download visualizations modal
  */
 function openDownloadVizModal(seq) {
+    // Check if download viz modal exists (not present on download page)
+    if (!downloadVizModal) {
+        console.warn('Download viz modal not available on this page');
+        return;
+    }
+
     currentDownloadSeq = seq;
 
     // Update job info
     const jobInfo = document.getElementById('download-viz-job-info');
-    jobInfo.textContent = `${seq.job_title || seq.job_id.substring(0, 8)} - ${seq.sequence_id}`;
+    if (jobInfo) {
+        jobInfo.textContent = `${seq.job_title || seq.job_id.substring(0, 8)} - ${seq.sequence_id}`;
+    }
 
     // Reset checkboxes
     document.getElementById('download-viz-silhouette').checked = true;
@@ -1279,7 +1355,7 @@ function openDownloadVizModal(seq) {
         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
         </svg>
-        Download PNG
+        Download SVG
     `;
 
     downloadVizModal.classList.remove('hidden');
@@ -1400,7 +1476,7 @@ async function downloadSelectedViz() {
                 for (const [source, result] of Object.entries(downloadResults)) {
                     if (result.dataUrl && !result.error) {
                         files.push({
-                            name: `${source}_${seq.sequence_id}_${seq.job_id.substring(0, 8)}.png`,
+                            name: `${source}_${seq.sequence_id}_${seq.job_id.substring(0, 8)}.svg`,
                             dataUrl: result.dataUrl
                         });
                     }
@@ -1416,7 +1492,7 @@ async function downloadSelectedViz() {
                         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                         </svg>
-                        Download PNG
+                        Download SVG
                     `;
                     return;
                 }
@@ -1456,7 +1532,7 @@ async function downloadSelectedViz() {
                 <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
-                Download PNG
+                Download SVG
             `;
         }
     }, 15000);
@@ -1468,17 +1544,6 @@ document.getElementById('download-viz-confirm-btn')?.addEventListener('click', d
 downloadVizModal?.addEventListener('click', (e) => {
     if (e.target === downloadVizModal) closeDownloadVizModal();
 });
-
-// Handle scroll and resize - hide action buttons
-window.addEventListener('scroll', () => {
-    hideActionButtons();
-    currentHoveredRow = null;
-}, { passive: true });
-
-window.addEventListener('resize', () => {
-    hideActionButtons();
-    currentHoveredRow = null;
-}, { passive: true });
 
 // Keyboard event for closing modals
 document.addEventListener('keydown', (e) => {

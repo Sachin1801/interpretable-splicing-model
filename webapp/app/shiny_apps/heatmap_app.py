@@ -144,7 +144,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                         console.log('[Heatmap] Download requested');
                         var plotDiv = document.querySelector('.js-plotly-plot');
                         if (plotDiv) {{
-                            Plotly.toImage(plotDiv, {{format: 'png', width: 1200, height: 700, scale: 2}})
+                            Plotly.toImage(plotDiv, {{format: 'svg', width: 1200, height: 700}})
                                 .then(function(dataUrl) {{
                                     window.parent.postMessage({{
                                         type: 'downloadResponse',
@@ -543,11 +543,10 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 config={
                     "responsive": True,
                     "toImageButtonOptions": {
-                        "format": "png",
+                        "format": "svg",
                         "filename": "heatmap_view",
                         "height": 700,
                         "width": 1200,
-                        "scale": 2
                     },
                     "displayModeBar": True,
                     "modeBarButtonsToAdd": ["toImage"],

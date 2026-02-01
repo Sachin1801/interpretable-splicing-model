@@ -497,16 +497,16 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
             plt.tight_layout()
 
-            # Convert to PNG
+            # Convert to SVG
             import io
             import base64
             buf = io.BytesIO()
-            fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+            fig.savefig(buf, format='svg', bbox_inches='tight')
             buf.seek(0)
             img_base64 = base64.b64encode(buf.read()).decode('utf-8')
             plt.close(fig)
 
-            return ui.HTML(f'<img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;" />')
+            return ui.HTML(f'<img src="data:image/svg+xml;base64,{img_base64}" style="max-width: 100%; height: auto;" />')
 
     return App(app_ui, server)
 

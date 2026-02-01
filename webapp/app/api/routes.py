@@ -922,6 +922,55 @@ async def delete_job(
     return {"status": "deleted", "job_id": job_id}
 
 
+@router.delete("/batch/{job_id}/sequence/{batch_index}", tags=["history"])
+async def delete_batch_sequence(
+    job_id: str,
+    batch_index: int = Path(..., ge=0, description="Sequence index (0-based)"),
+    access_token: str = Query(..., description="User access token"),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a single sequence from a batch job.
+
+    If this is the last sequence in the batch, the entire job is deleted.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.access_token != access_token:
+        raise HTTPException(status_code=403, detail="Access denied - token does not match")
+
+    if not job.is_batch:
+        raise HTTPException(status_code=400, detail="Not a batch job")
+
+    # Get and modify batch data
+    sequences = job.get_batch_sequences() or []
+    results = job.get_batch_results() or []
+
+    if batch_index >= len(sequences) and batch_index >= len(results):
+        raise HTTPException(status_code=404, detail="Sequence index not found")
+
+    # Remove the sequence at index from both lists
+    if batch_index < len(sequences):
+        sequences.pop(batch_index)
+    if batch_index < len(results):
+        results.pop(batch_index)
+
+    # If no sequences left, delete the entire job
+    if len(sequences) == 0 and len(results) == 0:
+        db.delete(job)
+        db.commit()
+        return {"status": "deleted", "job_id": job_id, "deleted_entire_job": True}
+
+    # Update job with remaining sequences
+    job.set_batch_sequences(sequences)
+    job.set_batch_results(results)
+    db.commit()
+
+    return {"status": "deleted", "job_id": job_id, "batch_index": batch_index}
+
+
 @router.get("/batch/{job_id}/results", response_model=PaginatedBatchResultsResponse, tags=["results"])
 async def get_batch_results_paginated(
     job_id: str,
