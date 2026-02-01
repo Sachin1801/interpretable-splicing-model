@@ -141,27 +141,18 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     margin: 0;
                     padding: 16px;
                 }
-                .filter-panel {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 16px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    max-height: 600px;
-                    overflow-y: auto;
-                }
-                .filter-section h4 {
-                    margin: 0 0 8px 0;
-                    font-size: 14px;
-                    color: #374151;
-                }
-                .filter-section {
-                    margin-bottom: 16px;
-                }
                 .heatmap-container {
                     background: white;
                     border-radius: 8px;
-                    padding: 16px;
+                    padding: 12px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    
+                    display: flex;
+                    justify-content: center;
+                }
+                .heatmap-container .js-plotly-plot{
+                    width: 100%;
+                    max-width: 1100px;
                 }
                 .error-message {
                     color: #dc2626;
@@ -252,9 +243,6 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             children = data["nucleotide_activations"]["children"]
             available_filters = list_all_filters_collapsed(children)
 
-           
-   
-
             # Extract data
             full_seq = data["sequence"]
             exon = data["exon"]
@@ -326,9 +314,9 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     )
 
             fig.update_layout(
-                height=max(650, 18 * len(filters_rev) + 180),
-                width=1050,
-                margin=dict(l=130, r=20, t=80, b=30),
+                height=max(450, 18 * len(filters_rev) + 180),
+               
+                margin=dict(l=110, r=20, t=80, b=30),
                 xaxis=dict(
                     side="top",
                     tickmode="array",
@@ -343,18 +331,19 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     categoryarray=filters_rev,
                 ),
             )
+            
 
             # Convert to HTML with download button enabled
             html_content = fig.to_html(
                 full_html=False,
-                include_plotlyjs="cdn",
+                include_plotlyjs=True,
                 config={
                     "responsive": True,
                     "toImageButtonOptions": {
                         "format": "png",
                         "filename": "heatmap_view",
-                        "height": 700,
-                        "width": 1200,
+                        "height": 500,
+                        "width": 1100,
                         "scale": 2
                     },
                     "displayModeBar": True,

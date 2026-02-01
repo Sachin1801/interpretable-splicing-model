@@ -166,6 +166,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 }
                 .plot-container {
                     background: white;
+                    width:100%;
                     border-radius: 8px;
                     padding: 16px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
