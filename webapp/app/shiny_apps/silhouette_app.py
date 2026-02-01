@@ -90,21 +90,29 @@ def create_app(api_base_url: str = "http://localhost:8000"):
     app_ui = ui.page_fluid(
         ui.head_content(
             ui.tags.script("""
+                // Parse URL query parameters as fallback
+                function getUrlParams() {
+                    const params = new URLSearchParams(window.location.search);
+                    return {
+                        job_id: params.get('job_id'),
+                        batch_index: params.get('batch_index')
+                    };
+                }
+
+                // Set params in Shiny (from URL or postMessage)
+                function setShinyParams(job_id, batch_index) {
+                    if (typeof Shiny !== 'undefined' && Shiny.setInputValue && job_id) {
+                        console.log('[Silhouette] Setting params:', job_id, batch_index);
+                        Shiny.setInputValue('pm_job_id', job_id);
+                        Shiny.setInputValue('pm_batch_index', batch_index);
+                    }
+                }
+
                 // Listen for postMessage from parent window
                 window.addEventListener('message', function(event) {
                     if (event.data && event.data.type === 'setParams') {
                         console.log('[Silhouette] Received params via postMessage:', event.data);
-                        // Wait for Shiny to be ready, then set input values
-                        if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {
-                            Shiny.setInputValue('pm_job_id', event.data.job_id);
-                            Shiny.setInputValue('pm_batch_index', event.data.batch_index);
-                        } else {
-                            // Retry after Shiny loads
-                            document.addEventListener('shiny:connected', function() {
-                                Shiny.setInputValue('pm_job_id', event.data.job_id);
-                                Shiny.setInputValue('pm_batch_index', event.data.batch_index);
-                            });
-                        }
+                        setShinyParams(event.data.job_id, event.data.batch_index);
                     }
                     // Handle download request from parent
                     if (event.data && event.data.type === 'downloadRequest') {
@@ -125,9 +133,17 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                         }
                     }
                 });
-                // Request params from parent when Shiny is ready
+
+                // When Shiny connects, try URL params first, then request from parent
                 document.addEventListener('shiny:connected', function() {
-                    console.log('[Silhouette] Shiny connected, requesting params from parent');
+                    console.log('[Silhouette] Shiny connected');
+                    // Try URL params immediately
+                    var urlParams = getUrlParams();
+                    if (urlParams.job_id) {
+                        console.log('[Silhouette] Using URL params:', urlParams);
+                        setShinyParams(urlParams.job_id, urlParams.batch_index);
+                    }
+                    // Also request from parent as backup
                     window.parent.postMessage({type: 'ready', source: 'silhouette'}, '*');
                 });
             """),
