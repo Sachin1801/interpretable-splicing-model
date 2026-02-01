@@ -18,7 +18,7 @@ jobs:
 
       - name: Migrate large files to LFS
         run: |
-          git lfs migrate import --include="*.pkl.gz,*.db,*.zip,*.pdf,*.xlsx,*.xls,*.h5,*.csv.gz" --everything --yes
+          git lfs migrate import --include="*.pkl.gz,*.zip,*.pdf,*.xlsx,*.xls,*.h5,*.csv.gz" --everything --yes
 
       - name: Push to Hugging Face
         env:
