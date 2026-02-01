@@ -397,6 +397,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
             ax.set_xticks(x)
             ax.set_xticklabels(bases, fontsize=7)
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
 
             # Add secondary structure on second x-axis
             ax2 = ax.twiny()
@@ -420,8 +422,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             ax.set_yticklabels([str(abs(t)) for t in ticks])
 
             ax.set_title("Silhouette View - Position-wise Filter Contributions")
-            ax.set_ylabel("Strength")
-            ax.legend(loc='upper right')
+            ax.set_ylabel("Strength (a.u.)")
+            ax.legend(loc='upper right', frameon=False)
 
             plt.tight_layout()
 
