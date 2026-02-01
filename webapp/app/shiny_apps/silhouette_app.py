@@ -184,34 +184,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
         ),
         ui.row(
             ui.column(
-                3,
-                ui.div(
-                    {"class": "filter-panel"},
-                    ui.h4("Filter Selection"),
-                    ui.p("Select which filters contribute to the silhouette view:",
-                         style="font-size: 12px; color: #6b7280; margin-bottom: 12px;"),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Inclusion Filters", style="color: #2563eb;"),
-                        ui.output_ui("inclusion_checkboxes"),
-                    ),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Skipping Filters", style="color: #dc2626;"),
-                        ui.output_ui("skipping_checkboxes"),
-                    ),
-                    ui.div(
-                        {"class": "filter-section"},
-                        ui.h4("Structure Filters"),
-                        ui.output_ui("structure_checkboxes"),
-                    ),
-                    ui.hr(),
-                    ui.input_action_button("select_all", "Select All", class_="btn-sm"),
-                    ui.input_action_button("deselect_all", "Deselect All", class_="btn-sm"),
-                ),
-            ),
-            ui.column(
-                9,
+                12,
                 ui.div(
                     {"class": "plot-container"},
                     ui.output_ui("silhouette_plot"),
@@ -255,80 +228,6 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             except Exception as e:
                 error_message.set(f"Unexpected error: {str(e)}")
 
-        @output
-        @render.ui
-        def inclusion_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
-
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-
-            return ui.input_checkbox_group(
-                "incl_filters",
-                None,
-                choices={f: f for f in incl_filters},
-                selected=incl_filters,
-            )
-
-        @output
-        @render.ui
-        def skipping_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
-
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-
-            return ui.input_checkbox_group(
-                "skip_filters",
-                None,
-                choices={f: f for f in skip_filters},
-                selected=skip_filters,
-            )
-
-        @output
-        @render.ui
-        def structure_checkboxes():
-            data = vis_data.get()
-            if not data:
-                return ui.p("Loading...")
-
-            children = data["nucleotide_activations"]["children"]
-            all_filters = list_all_filters_collapsed(children)
-            struct_filters = [f for f in all_filters if "struct" in f]
-
-            return ui.input_checkbox_group(
-                "struct_filters",
-                None,
-                choices={f: f for f in struct_filters},
-                selected=struct_filters,
-            )
-
-        @reactive.Effect
-        @reactive.event(input.select_all)
-        def select_all_filters():
-            data = vis_data.get()
-            if data:
-                children = data["nucleotide_activations"]["children"]
-                all_filters = list_all_filters_collapsed(children)
-                incl_filters = [f for f in all_filters if f.startswith("incl_") and not f.startswith("incl_struct")]
-                skip_filters = [f for f in all_filters if f.startswith("skip_") and not f.startswith("skip_struct")]
-                struct_filters = [f for f in all_filters if "struct" in f]
-                ui.update_checkbox_group("incl_filters", selected=incl_filters)
-                ui.update_checkbox_group("skip_filters", selected=skip_filters)
-                ui.update_checkbox_group("struct_filters", selected=struct_filters)
-
-        @reactive.Effect
-        @reactive.event(input.deselect_all)
-        def deselect_all_filters():
-            ui.update_checkbox_group("incl_filters", selected=[])
-            ui.update_checkbox_group("skip_filters", selected=[])
-            ui.update_checkbox_group("struct_filters", selected=[])
 
         @output
         @render.ui
@@ -341,24 +240,13 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             if not data:
                 return ui.div({"class": "loading"}, "Waiting for job parameters...")
 
-            # Get selected filters
-            incl_selected = list(input.incl_filters()) if input.incl_filters() else []
-            skip_selected = list(input.skip_filters()) if input.skip_filters() else []
-            struct_selected = list(input.struct_filters()) if input.struct_filters() else []
-            all_selected = incl_selected + skip_selected + struct_selected
-
-            if not all_selected:
-                return ui.div(
-                    {"class": "loading"},
-                    "Select at least one filter to display the silhouette view."
-                )
-
             # Extract data
             full_seq = data["sequence"]
             exon = data["exon"]
             struct_full = data["structs"]
             L = len(full_seq)
             children = data["nucleotide_activations"]["children"]
+    
 
             # Calculate full range from all filters for fixed y-axis
             incl_total_all, skip_total_all = parse_total_position_strengths(children, L)
@@ -380,7 +268,8 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             y_min_all = -y_max_all
 
             # Calculate values for selected filters
-            incl_total, skip_total = position_totals_for_selected_filters(children, L, all_selected)
+            filters = list_all_filters_collapsed(children)
+            incl_total, skip_total = position_totals_for_selected_filters(children, L, filters)
 
             # Create plot
             x = np.arange(L)
