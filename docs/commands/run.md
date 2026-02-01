@@ -3,5 +3,5 @@
 - USE VENV310 TO GET THE RIGHT DEPENDENCIES 
 
 ```
-python -m uvicorn webapp.app.main:app --port 8000
+python -m uvicorn webapp.app.main:app --port 7860
 ```

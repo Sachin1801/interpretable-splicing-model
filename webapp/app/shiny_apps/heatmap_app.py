@@ -424,7 +424,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             )
 
             # Highlight exon region
-            fig.add_vrect(x0=start-0.5, x1=end-0.5, fillcolor="#d0d0d0", line_width=0, opacity=0.2)
+            fig.add_vrect(x0=start-0.5, x1=end-0.5, fillcolor="#d0d0d0", line_width=0, opacity=0.1)
 
             # Add filter icons to the left of y-axis labels
             fig.update_layout(images=[])
@@ -448,7 +448,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     )
 
             fig.update_layout(
-                height=max(638, 18 * len(filters_rev) + 188),
+                height=max(650, 18 * len(filters_rev) + 180),
                 width=1050,
                 margin=dict(l=130, r=20, t=80, b=30),
                 xaxis=dict(
