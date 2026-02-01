@@ -680,11 +680,19 @@ async def get_vis_data_endpoint(
     Returns collapsed filter activations organized both by feature and by position.
     This data powers the silhouette view and the new heatmap with diverging colors.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[vis_data API] Request received: job_id={job_id}, batch_index={batch_index}")
+
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
+        logger.warning(f"[vis_data API] Job not found: {job_id}")
         raise HTTPException(status_code=404, detail="Job not found")
 
+    logger.info(f"[vis_data API] Job found: status={job.status}, is_batch={job.is_batch}")
+
     if job.status != "finished":
+        logger.warning(f"[vis_data API] Job not finished: {job.status}")
         raise HTTPException(status_code=400, detail="Job not yet complete")
 
     # Get the appropriate sequence
@@ -692,18 +700,24 @@ async def get_vis_data_endpoint(
         # Get specific sequence from batch
         results = job.get_batch_results()
         if batch_index >= len(results):
+            logger.warning(f"[vis_data API] Batch index {batch_index} not found (total: {len(results)})")
             raise HTTPException(status_code=404, detail=f"Batch index {batch_index} not found")
         sequence = results[batch_index].get("sequence", "")
         if not sequence:
+            logger.warning(f"[vis_data API] Sequence not found in batch results at index {batch_index}")
             raise HTTPException(status_code=400, detail="Sequence not found in batch results")
     else:
         # Use the main sequence (or first sequence for batch)
         sequence = job.sequence
 
+    logger.info(f"[vis_data API] Computing vis_data for sequence (len={len(sequence) if sequence else 0})")
+
     try:
         vis_data = get_vis_data(sequence)
+        logger.info(f"[vis_data API] vis_data computed successfully, keys: {list(vis_data.keys())}")
         return vis_data
     except Exception as e:
+        logger.error(f"[vis_data API] Error generating visualization data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error generating visualization data: {str(e)}")
 
 

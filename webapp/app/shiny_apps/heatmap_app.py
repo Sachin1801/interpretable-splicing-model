@@ -81,73 +81,112 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
     app_ui = ui.page_fluid(
         ui.head_content(
-            ui.tags.script("""
-                // Parse URL query parameters as fallback
-                function getUrlParams() {
+            ui.tags.script(f"""
+                // Configuration
+                var API_BASE_URL = '{api_base_url}';
+                var paramsSet = false;
+                var retryCount = 0;
+                var maxRetries = 5;
+
+                console.log('[Heatmap] App loaded. API_BASE_URL:', API_BASE_URL);
+                console.log('[Heatmap] Current URL:', window.location.href);
+
+                // Parse URL query parameters
+                function getUrlParams() {{
                     const params = new URLSearchParams(window.location.search);
-                    return {
+                    const result = {{
                         job_id: params.get('job_id'),
                         batch_index: params.get('batch_index')
-                    };
-                }
+                    }};
+                    console.log('[Heatmap] URL params parsed:', result);
+                    return result;
+                }}
 
                 // Set params in Shiny (from URL or postMessage)
-                function setShinyParams(job_id, batch_index) {
-                    if (typeof Shiny !== 'undefined' && Shiny.setInputValue && job_id) {
-                        console.log('[Heatmap] Setting params:', job_id, batch_index);
+                function setShinyParams(job_id, batch_index) {{
+                    console.log('[Heatmap] setShinyParams called:', job_id, batch_index, 'paramsSet:', paramsSet);
+                    if (paramsSet) {{
+                        console.log('[Heatmap] Params already set, skipping');
+                        return;
+                    }}
+                    if (typeof Shiny !== 'undefined' && Shiny.setInputValue && job_id) {{
+                        console.log('[Heatmap] Setting Shiny input values:', job_id, batch_index);
                         Shiny.setInputValue('pm_job_id', job_id);
                         Shiny.setInputValue('pm_batch_index', batch_index);
-                    }
-                }
+                        paramsSet = true;
+                    }} else {{
+                        console.log('[Heatmap] Cannot set params - Shiny:', typeof Shiny, 'setInputValue:', typeof Shiny?.setInputValue, 'job_id:', job_id);
+                    }}
+                }}
+
+                // Retry setting params if Shiny isn't ready
+                function retrySetParams() {{
+                    if (paramsSet || retryCount >= maxRetries) return;
+                    retryCount++;
+                    console.log('[Heatmap] Retry attempt', retryCount);
+                    var urlParams = getUrlParams();
+                    if (urlParams.job_id) {{
+                        setShinyParams(urlParams.job_id, urlParams.batch_index);
+                    }}
+                    if (!paramsSet && retryCount < maxRetries) {{
+                        setTimeout(retrySetParams, 500);
+                    }}
+                }}
 
                 // Listen for postMessage from parent window
-                window.addEventListener('message', function(event) {
-                    if (event.data && event.data.type === 'setParams') {
+                window.addEventListener('message', function(event) {{
+                    if (event.data && event.data.type === 'setParams') {{
                         console.log('[Heatmap] Received params via postMessage:', event.data);
                         setShinyParams(event.data.job_id, event.data.batch_index);
-                    }
+                    }}
                     // Handle download request from parent
-                    if (event.data && event.data.type === 'downloadRequest') {
+                    if (event.data && event.data.type === 'downloadRequest') {{
                         console.log('[Heatmap] Download requested');
                         var plotDiv = document.querySelector('.js-plotly-plot');
-                        if (plotDiv) {
-                            Plotly.toImage(plotDiv, {format: 'png', width: 1200, height: 700, scale: 2})
-                                .then(function(dataUrl) {
-                                    window.parent.postMessage({
+                        if (plotDiv) {{
+                            Plotly.toImage(plotDiv, {{format: 'png', width: 1200, height: 700, scale: 2}})
+                                .then(function(dataUrl) {{
+                                    window.parent.postMessage({{
                                         type: 'downloadResponse',
                                         source: 'heatmap',
                                         dataUrl: dataUrl
-                                    }, '*');
-                                })
-                                .catch(function(err) {
-                                    window.parent.postMessage({
+                                    }}, '*');
+                                }})
+                                .catch(function(err) {{
+                                    window.parent.postMessage({{
                                         type: 'downloadResponse',
                                         source: 'heatmap',
                                         error: err.toString()
-                                    }, '*');
-                                });
-                        } else {
-                            window.parent.postMessage({
+                                    }}, '*');
+                                }});
+                        }} else {{
+                            window.parent.postMessage({{
                                 type: 'downloadResponse',
                                 source: 'heatmap',
                                 error: 'Plot not ready'
-                            }, '*');
-                        }
-                    }
-                });
+                            }}, '*');
+                        }}
+                    }}
+                }});
 
                 // When Shiny connects, try URL params first, then request from parent
-                document.addEventListener('shiny:connected', function() {
-                    console.log('[Heatmap] Shiny connected');
+                document.addEventListener('shiny:connected', function() {{
+                    console.log('[Heatmap] shiny:connected event fired');
                     // Try URL params immediately
                     var urlParams = getUrlParams();
-                    if (urlParams.job_id) {
+                    if (urlParams.job_id) {{
                         console.log('[Heatmap] Using URL params:', urlParams);
                         setShinyParams(urlParams.job_id, urlParams.batch_index);
-                    }
+                    }}
                     // Also request from parent as backup
-                    window.parent.postMessage({type: 'ready', source: 'heatmap'}, '*');
-                });
+                    window.parent.postMessage({{type: 'ready', source: 'heatmap'}}, '*');
+                }});
+
+                // Also try on DOMContentLoaded as fallback
+                document.addEventListener('DOMContentLoaded', function() {{
+                    console.log('[Heatmap] DOMContentLoaded');
+                    setTimeout(retrySetParams, 1000);
+                }});
             """),
             ui.tags.style("""
                 body {
@@ -233,35 +272,50 @@ def create_app(api_base_url: str = "http://localhost:8000"):
         error_message = reactive.Value(None)
         params_received = reactive.Value(False)
 
+        print(f"[Heatmap Server] Initialized with api_base_url={api_base_url}", flush=True)
+
         @reactive.Effect
         @reactive.event(input.pm_job_id)
         async def on_params_received():
             """Triggered when params are received via postMessage."""
             job_id = input.pm_job_id()
             batch_index = input.pm_batch_index()
-            print(f"[Heatmap] Received postMessage params: job_id={job_id}, batch_index={batch_index}", flush=True)
+            print(f"[Heatmap Server] on_params_received triggered: job_id={job_id}, batch_index={batch_index}", flush=True)
 
             if not job_id:
+                print("[Heatmap Server] job_id is empty, setting waiting message", flush=True)
                 error_message.set("Waiting for job parameters...")
                 return
 
             params_received.set(True)
+            print(f"[Heatmap Server] params_received set to True", flush=True)
 
             try:
                 url = f"{api_base_url}/api/vis_data/{job_id}"
                 if batch_index is not None:
                     url += f"?batch_index={batch_index}"
 
+                print(f"[Heatmap Server] Making API request to: {url}", flush=True)
+
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     response = await client.get(url)
+                    print(f"[Heatmap Server] API response status: {response.status_code}", flush=True)
                     response.raise_for_status()
                     data = response.json()
+                    print(f"[Heatmap Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
                     vis_data.set(data)
                     error_message.set(None)  # Clear any error
+                    print("[Heatmap Server] vis_data set successfully", flush=True)
             except httpx.HTTPError as e:
-                error_message.set(f"Error fetching data: {str(e)}")
+                error_msg = f"HTTP Error fetching data: {str(e)}"
+                print(f"[Heatmap Server] {error_msg}", flush=True)
+                error_message.set(error_msg)
             except Exception as e:
-                error_message.set(f"Unexpected error: {str(e)}")
+                error_msg = f"Unexpected error: {type(e).__name__}: {str(e)}"
+                print(f"[Heatmap Server] {error_msg}", flush=True)
+                import traceback
+                traceback.print_exc()
+                error_message.set(error_msg)
 
         @output
         @render.ui

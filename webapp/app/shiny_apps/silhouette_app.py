@@ -89,63 +89,102 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
     app_ui = ui.page_fluid(
         ui.head_content(
-            ui.tags.script("""
-                // Parse URL query parameters as fallback
-                function getUrlParams() {
+            ui.tags.script(f"""
+                // Configuration
+                var API_BASE_URL = '{api_base_url}';
+                var paramsSet = false;
+                var retryCount = 0;
+                var maxRetries = 5;
+
+                console.log('[Silhouette] App loaded. API_BASE_URL:', API_BASE_URL);
+                console.log('[Silhouette] Current URL:', window.location.href);
+
+                // Parse URL query parameters
+                function getUrlParams() {{
                     const params = new URLSearchParams(window.location.search);
-                    return {
+                    const result = {{
                         job_id: params.get('job_id'),
                         batch_index: params.get('batch_index')
-                    };
-                }
+                    }};
+                    console.log('[Silhouette] URL params parsed:', result);
+                    return result;
+                }}
 
                 // Set params in Shiny (from URL or postMessage)
-                function setShinyParams(job_id, batch_index) {
-                    if (typeof Shiny !== 'undefined' && Shiny.setInputValue && job_id) {
-                        console.log('[Silhouette] Setting params:', job_id, batch_index);
+                function setShinyParams(job_id, batch_index) {{
+                    console.log('[Silhouette] setShinyParams called:', job_id, batch_index, 'paramsSet:', paramsSet);
+                    if (paramsSet) {{
+                        console.log('[Silhouette] Params already set, skipping');
+                        return;
+                    }}
+                    if (typeof Shiny !== 'undefined' && Shiny.setInputValue && job_id) {{
+                        console.log('[Silhouette] Setting Shiny input values:', job_id, batch_index);
                         Shiny.setInputValue('pm_job_id', job_id);
                         Shiny.setInputValue('pm_batch_index', batch_index);
-                    }
-                }
+                        paramsSet = true;
+                    }} else {{
+                        console.log('[Silhouette] Cannot set params - Shiny:', typeof Shiny, 'setInputValue:', typeof Shiny?.setInputValue, 'job_id:', job_id);
+                    }}
+                }}
+
+                // Retry setting params if Shiny isn't ready
+                function retrySetParams() {{
+                    if (paramsSet || retryCount >= maxRetries) return;
+                    retryCount++;
+                    console.log('[Silhouette] Retry attempt', retryCount);
+                    var urlParams = getUrlParams();
+                    if (urlParams.job_id) {{
+                        setShinyParams(urlParams.job_id, urlParams.batch_index);
+                    }}
+                    if (!paramsSet && retryCount < maxRetries) {{
+                        setTimeout(retrySetParams, 500);
+                    }}
+                }}
 
                 // Listen for postMessage from parent window
-                window.addEventListener('message', function(event) {
-                    if (event.data && event.data.type === 'setParams') {
+                window.addEventListener('message', function(event) {{
+                    if (event.data && event.data.type === 'setParams') {{
                         console.log('[Silhouette] Received params via postMessage:', event.data);
                         setShinyParams(event.data.job_id, event.data.batch_index);
-                    }
+                    }}
                     // Handle download request from parent
-                    if (event.data && event.data.type === 'downloadRequest') {
+                    if (event.data && event.data.type === 'downloadRequest') {{
                         console.log('[Silhouette] Download requested');
                         var img = document.querySelector('.plot-container img');
-                        if (img && img.src) {
-                            window.parent.postMessage({
+                        if (img && img.src) {{
+                            window.parent.postMessage({{
                                 type: 'downloadResponse',
                                 source: 'silhouette',
                                 dataUrl: img.src
-                            }, '*');
-                        } else {
-                            window.parent.postMessage({
+                            }}, '*');
+                        }} else {{
+                            window.parent.postMessage({{
                                 type: 'downloadResponse',
                                 source: 'silhouette',
                                 error: 'Image not ready'
-                            }, '*');
-                        }
-                    }
-                });
+                            }}, '*');
+                        }}
+                    }}
+                }});
 
                 // When Shiny connects, try URL params first, then request from parent
-                document.addEventListener('shiny:connected', function() {
-                    console.log('[Silhouette] Shiny connected');
+                document.addEventListener('shiny:connected', function() {{
+                    console.log('[Silhouette] shiny:connected event fired');
                     // Try URL params immediately
                     var urlParams = getUrlParams();
-                    if (urlParams.job_id) {
+                    if (urlParams.job_id) {{
                         console.log('[Silhouette] Using URL params:', urlParams);
                         setShinyParams(urlParams.job_id, urlParams.batch_index);
-                    }
+                    }}
                     // Also request from parent as backup
-                    window.parent.postMessage({type: 'ready', source: 'silhouette'}, '*');
-                });
+                    window.parent.postMessage({{type: 'ready', source: 'silhouette'}}, '*');
+                }});
+
+                // Also try on DOMContentLoaded as fallback
+                document.addEventListener('DOMContentLoaded', function() {{
+                    console.log('[Silhouette] DOMContentLoaded');
+                    setTimeout(retrySetParams, 1000);
+                }});
             """),
             ui.tags.style("""
                 html, body {
@@ -241,35 +280,50 @@ def create_app(api_base_url: str = "http://localhost:8000"):
         error_message = reactive.Value(None)
         params_received = reactive.Value(False)
 
+        print(f"[Silhouette Server] Initialized with api_base_url={api_base_url}", flush=True)
+
         @reactive.Effect
         @reactive.event(input.pm_job_id)
         async def on_params_received():
             """Triggered when params are received via postMessage."""
             job_id = input.pm_job_id()
             batch_index = input.pm_batch_index()
-            print(f"[Silhouette] Received postMessage params: job_id={job_id}, batch_index={batch_index}", flush=True)
+            print(f"[Silhouette Server] on_params_received triggered: job_id={job_id}, batch_index={batch_index}", flush=True)
 
             if not job_id:
+                print("[Silhouette Server] job_id is empty, setting waiting message", flush=True)
                 error_message.set("Waiting for job parameters...")
                 return
 
             params_received.set(True)
+            print(f"[Silhouette Server] params_received set to True", flush=True)
 
             try:
                 url = f"{api_base_url}/api/vis_data/{job_id}"
                 if batch_index is not None:
                     url += f"?batch_index={batch_index}"
 
+                print(f"[Silhouette Server] Making API request to: {url}", flush=True)
+
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     response = await client.get(url)
+                    print(f"[Silhouette Server] API response status: {response.status_code}", flush=True)
                     response.raise_for_status()
                     data = response.json()
+                    print(f"[Silhouette Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
                     vis_data.set(data)
                     error_message.set(None)  # Clear any error
+                    print("[Silhouette Server] vis_data set successfully", flush=True)
             except httpx.HTTPError as e:
-                error_message.set(f"Error fetching data: {str(e)}")
+                error_msg = f"HTTP Error fetching data: {str(e)}"
+                print(f"[Silhouette Server] {error_msg}", flush=True)
+                error_message.set(error_msg)
             except Exception as e:
-                error_message.set(f"Unexpected error: {str(e)}")
+                error_msg = f"Unexpected error: {type(e).__name__}: {str(e)}"
+                print(f"[Silhouette Server] {error_msg}", flush=True)
+                import traceback
+                traceback.print_exc()
+                error_message.set(error_msg)
 
         @output
         @render.ui
