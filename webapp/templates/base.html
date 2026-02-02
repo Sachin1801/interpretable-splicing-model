@@ -110,65 +110,8 @@
                             </div>
                         </div>
 
-                        <!-- Auth dropdown -->
-                        <div id="auth-nav-desktop" class="relative">
-                            <!-- Not logged in: show Login button -->
-                            <div id="auth-logged-out">
-                                <button onclick="toggleAuthDropdown()" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md flex items-center">
-                                    Login
-                                    <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                                <!-- Dropdown menu -->
-                                <div id="auth-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
-                                    <!-- Message area -->
-                                    <div id="auth-message" class="hidden mb-3 p-3 rounded-md text-sm"></div>
-
-                                    <!-- Form -->
-                                    <div id="auth-form-container">
-                                        <div class="space-y-3">
-                                            <div>
-                                                <label for="auth-email" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                                                <input type="email" id="auth-email" placeholder="user@example.com"
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                                            </div>
-                                            <div>
-                                                <label for="auth-password" class="block text-xs font-medium text-gray-700 mb-1">Password</label>
-                                                <input type="password" id="auth-password" placeholder="••••••••"
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                                            </div>
-                                            <button onclick="submitAuth()" id="auth-submit-btn"
-                                                class="w-full py-2 px-4 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                                                <span id="auth-btn-text">Continue</span>
-                                                <svg id="auth-loading" class="hidden animate-spin ml-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <div class="mt-3 pt-3 border-t border-gray-200">
-                                            <p class="text-xs text-gray-500 text-center">No account? We'll create one automatically.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Logged in: show email + logout dropdown -->
-                            <div id="auth-logged-in" class="hidden">
-                                <button onclick="toggleUserDropdown()" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md flex items-center">
-                                    <span id="user-email-display" class="max-w-[150px] truncate"></span>
-                                    <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                                <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                    <button onclick="logoutUser()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Logout
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                            
+                        
                     </div>
 
                     <!-- Mobile menu button -->
@@ -223,29 +166,7 @@
                         </div>
                     </div>
 
-                    <!-- Auth links mobile -->
-                    <div id="auth-nav-mobile" class="border-t border-gray-200 pt-2 mt-2">
-                        <div id="mobile-auth-logged-out">
-                            <button onclick="toggleMobileAuthForm()" class="w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Login</button>
-                            <!-- Mobile auth form -->
-                            <div id="mobile-auth-form" class="hidden px-3 py-2 space-y-3">
-                                <div id="mobile-auth-message" class="hidden p-3 rounded-md text-sm"></div>
-                                <input type="email" id="mobile-auth-email" placeholder="Email"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                                <input type="password" id="mobile-auth-password" placeholder="Password"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                                <button onclick="submitMobileAuth()" id="mobile-auth-submit"
-                                    class="w-full py-2 px-4 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700">
-                                    Continue
-                                </button>
-                                <p class="text-xs text-gray-500 text-center">No account? We'll create one automatically.</p>
-                            </div>
-                        </div>
-                        <div id="mobile-auth-logged-in" class="hidden">
-                            <div class="px-3 py-2 text-sm text-gray-600" id="mobile-user-email"></div>
-                            <button onclick="logoutUser()" class="w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Logout</button>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         </nav>
