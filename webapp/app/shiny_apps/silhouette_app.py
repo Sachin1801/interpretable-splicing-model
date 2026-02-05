@@ -84,8 +84,13 @@ def position_totals_for_selected_filters(nucleotide_activations_children, L, sel
     return side_to_total(incl_node), side_to_total(skip_node)
 
 
-def create_app(api_base_url: str = "http://localhost:8000"):
-    """Create the PyShiny silhouette app."""
+def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
+    """Create the PyShiny silhouette app.
+    
+    Args:
+        api_base_url: Base URL for API requests (used if fastapi_app is None)
+        fastapi_app: Optional FastAPI app instance for internal API calls
+    """
 
     app_ui = ui.page_fluid(
         ui.head_content(
@@ -273,27 +278,42 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             print(f"[Silhouette Server] params_received set to True", flush=True)
 
             try:
-                url = f"{api_base_url}/api/vis_data/{job_id}"
-                if batch_index is not None:
-                    url += f"?batch_index={batch_index}"
-
-                print(f"[Silhouette Server] Making API request to: {url}", flush=True)
-
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    response = await client.get(url)
+                # Try to use internal FastAPI app if available, otherwise use HTTP
+                if fastapi_app is not None:
+                    # Use TestClient for internal requests (synchronous but works)
+                    from fastapi.testclient import TestClient
+                    client = TestClient(fastapi_app)
+                    url_path = f"/api/vis_data/{job_id}"
+                    if batch_index is not None:
+                        url_path += f"?batch_index={batch_index}"
+                    print(f"[Silhouette Server] Making internal API request to: {url_path}", flush=True)
+                    response = client.get(url_path)
                     print(f"[Silhouette Server] API response status: {response.status_code}", flush=True)
-                    response.raise_for_status()
+                    if response.status_code != 200:
+                        raise Exception(f"API returned status {response.status_code}: {response.text}")
                     data = response.json()
-                    print(f"[Silhouette Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
-                    vis_data.set(data)
-                    error_message.set(None)  # Clear any error
-                    print("[Silhouette Server] vis_data set successfully", flush=True)
-            except httpx.HTTPError as e:
-                error_msg = f"HTTP Error fetching data: {str(e)}"
-                print(f"[Silhouette Server] {error_msg}", flush=True)
-                error_message.set(error_msg)
+                else:
+                    # Fallback to HTTP request
+                    url = f"{api_base_url}/api/vis_data/{job_id}"
+                    if batch_index is not None:
+                        url += f"?batch_index={batch_index}"
+                    print(f"[Silhouette Server] Making HTTP API request to: {url}", flush=True)
+                    async with httpx.AsyncClient(
+                        timeout=60.0,
+                        follow_redirects=True,
+                        verify=False
+                    ) as client:
+                        response = await client.get(url)
+                        print(f"[Silhouette Server] API response status: {response.status_code}", flush=True)
+                        response.raise_for_status()
+                        data = response.json()
+                
+                print(f"[Silhouette Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
+                vis_data.set(data)
+                error_message.set(None)  # Clear any error
+                print("[Silhouette Server] vis_data set successfully", flush=True)
             except Exception as e:
-                error_msg = f"Unexpected error: {type(e).__name__}: {str(e)}"
+                error_msg = f"Error fetching data: {type(e).__name__}: {str(e)}"
                 print(f"[Silhouette Server] {error_msg}", flush=True)
                 import traceback
                 traceback.print_exc()
@@ -352,7 +372,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             ax.bar(x, -skip_total, width=1, color="#f0a5a5", label="Skipping")
 
             # Shade exon region
-            ax.axvspan(start - 0.5, end - 0.5, color="#d0d0d0", alpha=0.15)
+            #ax.axvspan(start - 0.5, end - 0.5, color="#d0d0d0", alpha=0.15)
             ax.axhline(0, linewidth=1, color='black')
 
             ax.set_xticks(x)
@@ -402,4 +422,4 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
 
 # Create the app instance
-app = create_app()
+#app = create_app()

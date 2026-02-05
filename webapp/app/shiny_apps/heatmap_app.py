@@ -76,8 +76,13 @@ def filter_to_icon_url(filter_name: str) -> str:
     return f"/static/filters/{filter_name}.png"
 
 
-def create_app(api_base_url: str = "http://localhost:8000"):
-    """Create the PyShiny heatmap app."""
+def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
+    """Create the PyShiny heatmap app.
+    
+    Args:
+        api_base_url: Base URL for API requests (used if fastapi_app is None)
+        fastapi_app: Optional FastAPI app instance for internal API calls
+    """
 
     app_ui = ui.page_fluid(
         ui.head_content(
@@ -137,24 +142,19 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 window.addEventListener('message', function(event) {{
                     if (event.data && event.data.type === 'setParams') {{
                         console.log('[Heatmap] Received params via postMessage:', event.data);
-<<<<<<< HEAD
-                        setShinyParams(event.data.job_id, event.data.batch_index);
-                    }}
-=======
                         // Wait for Shiny to be ready, then set input values
-                        if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {
+                        if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {{
                             Shiny.setInputValue('pm_job_id', event.data.job_id);
                             Shiny.setInputValue('pm_batch_index', event.data.batch_index);
-                        } else {
+                        }} else {{
                            
                             // Retry after Shiny loads
-                            document.addEventListener('shiny:connected', function() {
+                            document.addEventListener('shiny:connected', function() {{
                                 Shiny.setInputValue('pm_job_id', event.data.job_id);
                                 Shiny.setInputValue('pm_batch_index', event.data.batch_index);
-                            });
-                        }
-                    }
->>>>>>> feat/remove-checkboxes
+                            }});
+                        }}
+                    }}
                     // Handle download request from parent
                     if (event.data && event.data.type === 'downloadRequest') {{
                         console.log('[Heatmap] Download requested');
@@ -204,7 +204,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     setTimeout(retrySetParams, 1000);
                 }});
             """),
-            ui.tags.style("""
+        ui.tags.style("""
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     background: #f9fafb;
@@ -236,7 +236,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                 }
             """)
         ),
-        ui.row(
+    ui.row(
             ui.column(
                 12,
                 ui.div(
@@ -274,29 +274,42 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             print(f"[Heatmap Server] params_received set to True", flush=True)
 
             try:
-                url = f"{api_base_url}/api/vis_data/{job_id}"
-                
-                if batch_index is not None:
-                    url += f"?batch_index={batch_index}"
-
-                print(f"[Heatmap Server] Making API request to: {url}", flush=True)
-
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    print(f"[Heatmap] GET {url}", flush=True)
-                    response = await client.get(url)
+                # Try to use internal FastAPI app if available, otherwise use HTTP
+                if fastapi_app is not None:
+                    # Use TestClient for internal requests (synchronous but works)
+                    from fastapi.testclient import TestClient
+                    client = TestClient(fastapi_app)
+                    url_path = f"/api/vis_data/{job_id}"
+                    if batch_index is not None:
+                        url_path += f"?batch_index={batch_index}"
+                    print(f"[Heatmap Server] Making internal API request to: {url_path}", flush=True)
+                    response = client.get(url_path)
                     print(f"[Heatmap Server] API response status: {response.status_code}", flush=True)
-                    response.raise_for_status()
+                    if response.status_code != 200:
+                        raise Exception(f"API returned status {response.status_code}: {response.text}")
                     data = response.json()
-                    print(f"[Heatmap Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
-                    vis_data.set(data)
-                    error_message.set(None)  # Clear any error
-                    print("[Heatmap Server] vis_data set successfully", flush=True)
-            except httpx.HTTPError as e:
-                error_msg = f"HTTP Error fetching data: {str(e)}"
-                print(f"[Heatmap Server] {error_msg}", flush=True)
-                error_message.set(error_msg)
+                else:
+                    # Fallback to HTTP request
+                    url = f"{api_base_url}/api/vis_data/{job_id}"
+                    if batch_index is not None:
+                        url += f"?batch_index={batch_index}"
+                    print(f"[Heatmap Server] Making HTTP API request to: {url}", flush=True)
+                    async with httpx.AsyncClient(
+                        timeout=60.0,
+                        follow_redirects=True,
+                        verify=False
+                    ) as client:
+                        response = await client.get(url)
+                        print(f"[Heatmap Server] API response status: {response.status_code}", flush=True)
+                        response.raise_for_status()
+                        data = response.json()
+                
+                print(f"[Heatmap Server] API response data keys: {list(data.keys()) if data else 'None'}", flush=True)
+                vis_data.set(data)
+                error_message.set(None)  # Clear any error
+                print("[Heatmap Server] vis_data set successfully", flush=True)
             except Exception as e:
-                error_msg = f"Unexpected error: {type(e).__name__}: {str(e)}"
+                error_msg = f"Error fetching data: {type(e).__name__}: {str(e)}"
                 print(f"[Heatmap Server] {error_msg}", flush=True)
                 import traceback
                 traceback.print_exc()
@@ -375,7 +388,7 @@ def create_app(api_base_url: str = "http://localhost:8000"):
             )
 
             # Highlight exon region
-            fig.add_vrect(x0=start-0.5, x1=end-0.5, fillcolor="#d0d0d0", line_width=0, opacity=0.1)
+            #fig.add_vrect(x0=start-0.5, x1=end-0.5, fillcolor="#d0d0d0", line_width=0, opacity=0.1)
 
             # Add filter icons to the left of y-axis labels
             fig.update_layout(images=[])
@@ -427,17 +440,17 @@ def create_app(api_base_url: str = "http://localhost:8000"):
                     "toImageButtonOptions": {
                         "format": "svg",
                         "filename": "heatmap_view",
-<<<<<<< HEAD
-                        "height": 700,
-                        "width": 1200,
-=======
                         "height": 500,
                         "width": 1100,
                         "scale": 2
->>>>>>> feat/remove-checkboxes
                     },
                     "displayModeBar": True,
-                    "modeBarButtonsToAdd": ["toImage"],
+                    
+                    "modeBarButtons": [[
+                        "zoom2d",
+                        "toImage"
+                    ]],
+                    "displaylogo": False,
                 },
             )
 
@@ -447,4 +460,4 @@ def create_app(api_base_url: str = "http://localhost:8000"):
 
 
 # Create the app instance
-app = create_app()
+#app = create_app()
