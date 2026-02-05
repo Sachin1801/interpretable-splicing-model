@@ -216,13 +216,20 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                     border-radius: 8px;
                     padding: 12px;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    
-                    display: flex;
-                    justify-content: center;
-                }
-                .heatmap-container .js-plotly-plot{
+
                     width: 100%;
                     max-width: 1100px;
+                    margin: 0 auto;
+                    box-sizing: border-box;
+
+                    overflow: hidden;         
+                }
+                .heatmap-container .plotly-graph-div,
+                    .heatmap-container .js-plotly-plot,
+                    .heatmap-container .svg-container {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
                 }
                 .error-message {
                     color: #dc2626;
@@ -383,7 +390,7 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                     ],
                     hovertemplate="Filter %{y}<br>Base %{customdata}<br>Strength %{z:.4f}<extra></extra>",
                     customdata=np.array(x_bases)[None, :].repeat(len(filters_rev), axis=0),
-                    colorbar=dict(title="Strength<br>(+ incl, - skip)"),
+                    colorbar=dict(title="Strength"),
                 )
             )
 
@@ -412,9 +419,10 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                     )
 
             fig.update_layout(
+                title="Heat Map: Filter Contributions",
                 height=max(450, 18 * len(filters_rev) + 180),
                
-                margin=dict(l=110, r=20, t=80, b=30),
+                margin=dict(l=110, r=100, t=80, b=30),
                 xaxis=dict(
                     side="top",
                     tickmode="array",
@@ -429,6 +437,9 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                     categoryarray=filters_rev,
                 ),
             )
+            fig.update_layout(
+                autosize=True,
+            )
             
 
             # Convert to HTML with download button enabled
@@ -441,7 +452,7 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                         "format": "svg",
                         "filename": "heatmap_view",
                         "height": 500,
-                        "width": 1100,
+                        "width": 1090,
                         "scale": 2
                     },
                     "displayModeBar": True,

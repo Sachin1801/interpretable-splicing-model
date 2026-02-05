@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from shiny import App, ui, render, reactive
 import numpy as np
 import httpx
+from shinywidgets import output_widget, render_widget
+import plotly.graph_objects as go
 
 
 def parse_total_position_strengths(nucleotide_activations_children, L):
@@ -241,16 +243,15 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
                     text-align: center;
                     color: #6b7280;
                 }
+                .js-plotly-plot .points .point:hover path {
+                    filter: brightness(0.85);
+                }
             """)
         ),
-        ui.row(
-            ui.column(
-                12,
-                ui.div(
-                    {"class": "plot-container"},
-                    ui.output_ui("silhouette_plot"),
-                ),
-            ),
+        ui.div(
+            {"class": "plot-container"},
+            ui.output_ui("silhouette_plot")
+
         ),
     )
 
@@ -325,98 +326,173 @@ def create_app(api_base_url: str = "http://localhost:8000", fastapi_app=None):
         def silhouette_plot():
             err = error_message.get()
             if err:
-                return ui.div({"class": "error-message"}, err)
+                # For widgets, return None and show error elsewhere, or make a ui.output_ui for errors
+                return None
 
             data = vis_data.get()
             if not data:
-                return ui.div({"class": "loading"}, "Waiting for job parameters...")
+                return None
 
-            # Extract data
             full_seq = data["sequence"]
             exon = data["exon"]
             struct_full = data["structs"]
             L = len(full_seq)
             children = data["nucleotide_activations"]["children"]
-    
 
-            # Calculate full range from all filters for fixed y-axis
+            # full-range y-axis limits (same as you did)
             incl_total_all, skip_total_all = parse_total_position_strengths(children, L)
             start = full_seq.find(exon.replace("U", "T"))
             if start == -1:
                 start = full_seq.upper().find(exon.upper().replace("U", "T"))
             if start == -1:
-                start = 10  # Default flanking length
+                start = 10
             end = start + len(exon)
 
-            # Get full range for y-axis
             incl_exon_all = incl_total_all[start:end]
             skip_exon_all = skip_total_all[start:end]
             y_max_all = max(
-                np.max(incl_exon_all) if len(incl_exon_all) > 0 else 0,
-                np.max(skip_exon_all) if len(skip_exon_all) > 0 else 0
+                float(np.max(incl_exon_all)) if len(incl_exon_all) else 0.0,
+                float(np.max(skip_exon_all)) if len(skip_exon_all) else 0.0,
+                0.1,
             )
-            y_max_all = max(y_max_all, 0.1)
             y_min_all = -y_max_all
 
-            # Calculate values for selected filters
+            # values to display (you currently select "all filters" anyway)
             filters = list_all_filters_collapsed(children)
             incl_total, skip_total = position_totals_for_selected_filters(children, L, filters)
 
-            # Create plot
             x = np.arange(L)
             bases = list(full_seq)
+            structs = list(struct_full)
 
-            fig, ax = plt.subplots(figsize=(21, 6))
+            # Custom hover text (shows both incl and skip at that position)
+            hover_common = [
+                f"Pos: {i+1}<br>Base: {b}<br>Struct: {st}<br>"
+                for i, (b, st) in enumerate(zip(bases, structs))
+            ]
 
-            ax.bar(x, incl_total, width=1, color="#bed2fd", label="Inclusion")
-            ax.bar(x, -skip_total, width=1, color="#f0a5a5", label="Skipping")
+            fig = go.Figure()
 
-            # Shade exon region
-            #ax.axvspan(start - 0.5, end - 0.5, color="#d0d0d0", alpha=0.15)
-            ax.axhline(0, linewidth=1, color='black')
+            fig.add_trace(
+                go.Bar(
+                    x=x,
+                    y=incl_total,
+                    name="Inclusion",
+                    marker_color="#bed2fd",
+                    hovertemplate=(
+                        "%{customdata}"
+                        + "Inclusion: %{y:.4f}<br>"
+                        + "Skipping: %{meta:.4f}<extra></extra>"
+                    ),
+                    customdata=hover_common,
+                    meta=skip_total,  # pass skip totals so inclusion hover shows both
+                    marker=dict(line=dict(width=0)),  # keeps hover highlight clean
+                )
+            )
 
-            ax.set_xticks(x)
-            ax.set_xticklabels(bases, fontsize=7)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
+            fig.add_trace(
+                go.Bar(
+                    x=x,
+                    y=-skip_total,
+                    name="Skipping",
+                    marker_color="#f0a5a5",
+                    hovertemplate=(
+                        "%{customdata}"
+                        + "Inclusion: %{meta:.4f}<br>"
+                        + "Skipping: %{y:.4f}<extra></extra>"
+                    ),
+                    customdata=hover_common,
+                    meta=incl_total,
+                    marker=dict(line=dict(width=0)),
+                )
+            )
 
-            # Add secondary structure on second x-axis
-            ax2 = ax.twiny()
-            ax2.set_xlim(ax.get_xlim())
-            ax2.xaxis.set_ticks_position("bottom")
-            ax2.xaxis.set_label_position("bottom")
-            ax2.spines["bottom"].set_position(("outward", 18))
-            ax2.spines["top"].set_visible(False)
-            ax2.spines["bottom"].set_visible(False)
-            ax2.set_xticks(x)
-            ax2.set_xticklabels(list(struct_full), fontsize=7)
-            ax2.tick_params(axis="x", length=0, pad=2)
+            # baseline + exon shading
+            fig.add_hline(y=0, line_width=1)
 
-            # Fixed symmetric limits
-            ax.set_ylim(y_min_all, y_max_all)
+            
 
-            # Integer tick marks
-            max_tick = int(np.ceil(max(abs(y_min_all), abs(y_max_all))))
-            ticks = np.arange(-max_tick, max_tick + 1, 1)
-            ax.set_yticks(ticks)
-            ax.set_yticklabels([str(abs(t)) for t in ticks])
+            # x tick labels: bases
+            fig.update_xaxes(
+                tickmode="array",
+                tickvals=x,
+                ticktext=bases,
+                tickfont=dict(size=10),
+                side="top",
+                showgrid=False,
+                zeroline=False,
+            )
+            fig.update_layout(
+                xaxis2=dict(
+                    overlaying="x",
+                    anchor="y",          # IMPORTANT: attach to same y-axis
+                    side="bottom",
+                    tickmode="array",
+                    tickvals=x,
+                    ticktext=structs,
+                    tickfont=dict(size=10),
+                    showgrid=False,
+                    zeroline=False,
+                    ticks="",
+                ),
+                margin=dict(l=80, r=20, t=60, b=90),   # IMPORTANT: more bottom margin
+            )
 
-            ax.set_title("Silhouette View - Position-wise Filter Contributions")
-            ax.set_ylabel("Strength (a.u.)")
-            ax.legend(loc='upper right', frameon=False)
+            # symmetric y limits
+            fig.update_yaxes(
+                range=[y_min_all, y_max_all],
+                title=dict(text="Strength (a.u.)"),
+                automargin=True,
+            )
 
-            plt.tight_layout()
+            fig.update_layout(
+                title="Silhouette View",
+                barmode="overlay",  # overlay gives the crisp hover highlight per trace
+                bargap=0.0,
+                hovermode="closest",  # highlight the bar you're on
+                height=420,
+                margin=dict(l=40, r=20, t=50, b=60),
+                #legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            )
+            fig.update_layout(
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+            )
+            fig.update_layout(showlegend=False)
+            fig.update_xaxes(showgrid=False, zeroline=False)
+            fig.update_yaxes(showgrid=False, zeroline=False)
 
-            # Convert to SVG
-            import io
-            import base64
-            buf = io.BytesIO()
-            fig.savefig(buf, format='svg', bbox_inches='tight')
-            buf.seek(0)
-            img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-            plt.close(fig)
 
-            return ui.HTML(f'<img src="data:image/svg+xml;base64,{img_base64}" style="max-width: 100%; height: auto;" />')
+            
+
+            html_content = fig.to_html(
+                full_html=False,
+                include_plotlyjs=True,
+                config={
+                    "responsive": True,
+                    "toImageButtonOptions": {
+                        "format": "svg",
+                        "filename": "heatmap_view",
+                        "height": 500,
+                        "width": 1100,
+                        "scale": 2
+                    },
+                    "displayModeBar": True,
+                    "modeBarButtons": [[
+                        "zoom2d",
+                        "toImage"
+                    ]],
+                    "displaylogo": False,
+                },
+            )
+
+            return ui.HTML(html_content)
+
+
+                
+                
+
+         
 
     return App(app_ui, server)
 
