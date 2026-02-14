@@ -298,9 +298,7 @@ window.copyLink = copyLink;
  * embedding) to avoid Mixed Content blocking.
  */
 function applyShinyIframeSrcs() {
-    const base = (window.location.host.includes('hf.space') && window.location.protocol === 'http:')
-        ? 'https://' + window.location.host
-        : window.location.origin;
+    const base = 'https://' + window.location.host;
     document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(iframe => {
         const path = iframe.getAttribute('data-src');
         if (path) iframe.src = base + path;
