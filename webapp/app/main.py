@@ -139,6 +139,17 @@ templates = Jinja2Templates(directory=str(templates_path)) if templates_path.exi
 app.include_router(api_router, prefix="/api", tags=["api"])
 
 
+@app.get("/api/debug/mounts", include_in_schema=False)
+async def debug_mounts():
+   
+    from starlette.routing import Mount
+    mounts = []
+    for r in getattr(app.router, "routes", []):
+        if isinstance(r, Mount):
+            mounts.append(r.path)
+    return {"mounts": mounts, "shiny_expected": ["/shiny/heatmap", "/shiny/silhouette"]}
+
+
 # HTML page routes
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def home(request: Request):
