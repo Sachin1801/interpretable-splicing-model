@@ -300,21 +300,10 @@ window.copyLink = copyLink;
  * Use localhost instead of 0.0.0.0 so the browser doesn't get "invalid response".
  */
 function applyShinyIframeSrcs() {
-    const hostname = window.location.hostname;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
-    let base;
-    if (isLocal) {
-        base = hostname === '0.0.0.0'
-            ? (window.location.protocol + '//localhost:' + window.location.port)
-            : window.location.origin;
-    } else {
-        base = 'https://' + window.location.host;
-    }
-    document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(iframe => {
-        const path = iframe.getAttribute('data-src');
-        if (path) iframe.src = base + path;
+    document.querySelectorAll('iframe[data-src]').forEach((iframe) => {
+      iframe.src = iframe.getAttribute('data-src'); 
     });
-}
+  }
 
 // Apply Shiny iframe URLs as soon as this script runs (iframes are already in DOM)
 applyShinyIframeSrcs();
