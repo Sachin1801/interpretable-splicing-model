@@ -182,6 +182,20 @@ async def input_page(request: Request):
     return templates.TemplateResponse("input.html", {"request": request, "settings": settings})
 
 
+def _app_base_url(request: Request) -> str:
+    """Public base URL for the app (HTTPS when not localhost). Use for Shiny iframes to avoid mixed content."""
+    host = request.headers.get("x-forwarded-host") or (request.url.host or "localhost")
+    port = request.url.port
+    if host in ("0.0.0.0", ""):
+        host = "localhost"
+    if port and port not in (80, 443):
+        host = f"{host}:{port}"
+    if host in ("localhost", "127.0.0.1") or host.startswith("localhost:") or host.startswith("127.0.0.1:"):
+        proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "http"
+        return f"{proto}://{host}"
+    return f"https://{host}"
+
+
 @app.get("/result/{job_id}", response_class=HTMLResponse, include_in_schema=False)
 async def result_page(request: Request, job_id: str):
     """Render the result page for a job. Uses batch_result.html for batch jobs."""
@@ -196,7 +210,12 @@ async def result_page(request: Request, job_id: str):
     template_name = "batch_result.html" if is_batch else "result.html"
     return templates.TemplateResponse(
         template_name,
-        {"request": request, "job_id": job_id, "settings": settings}
+        {
+            "request": request,
+            "job_id": job_id,
+            "settings": settings,
+            "app_base_url": _app_base_url(request),
+        },
     )
 
 
@@ -210,7 +229,8 @@ async def batch_sequence_detail_page(request: Request, job_id: str, index: int):
             "job_id": job_id,
             "batch_index": index,
             "settings": settings,
-        }
+            "app_base_url": _app_base_url(request),
+        },
     )
 
 

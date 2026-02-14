@@ -295,20 +295,19 @@ window.copyLink = copyLink;
 
 
 /**
- * Set Shiny iframe src from data-src, using HTTPS when not on localhost so embedded
- * pages (e.g. Hugging Face Spaces) don't hit Mixed Content when parent is HTTPS.
- * Use localhost instead of 0.0.0.0 so the browser doesn't get "invalid response".
+ * Set Shiny iframe src from data-src. Prefer window.APP_BASE_URL (set by server) so
+ * Hugging Face and other proxies get HTTPS; fallback to client-side logic for localhost/0.0.0.0.
  */
 function applyShinyIframeSrcs() {
-    const hostname = window.location.hostname;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
-    let base;
-    if (isLocal) {
-        base = hostname === '0.0.0.0'
-            ? (window.location.protocol + '//localhost:' + window.location.port)
-            : window.location.origin;
-    } else {
-        base = 'https://' + window.location.host;
+    let base = window.APP_BASE_URL;
+    if (!base) {
+        const hostname = window.location.hostname;
+        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+        base = isLocal
+            ? (hostname === '0.0.0.0'
+                ? (window.location.protocol + '//localhost:' + window.location.port)
+                : window.location.origin)
+            : ('https://' + window.location.host);
     }
     document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(iframe => {
         const path = iframe.getAttribute('data-src');
