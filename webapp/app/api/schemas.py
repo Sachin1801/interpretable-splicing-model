@@ -222,6 +222,7 @@ class HealthResponse(BaseModel):
     version: str
     model_loaded: bool
     database_connected: bool
+    shiny_available: Optional[bool] = None  # True if PyShiny (heatmap/silhouette) is mounted
 
 
 # ============================================================================

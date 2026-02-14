@@ -90,11 +90,18 @@ async def health_check(db: Session = Depends(get_db)):
     except Exception:
         pass
 
+    try:
+        from shiny import App  # noqa: F401
+        shiny_available = True
+    except Exception:
+        shiny_available = False
+
     return HealthResponse(
         status="healthy" if model_loaded and db_connected else "degraded",
         version=settings.app_version,
         model_loaded=model_loaded,
         database_connected=db_connected,
+        shiny_available=shiny_available,
     )
 
 

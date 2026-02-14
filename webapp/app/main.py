@@ -106,50 +106,28 @@ if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 # Mount PyShiny visualization apps
+# Use starlette_app for mounting so behavior is identical locally and on Hugging Face Spaces
 if SHINY_AVAILABLE:
-    # For server-side requests within the same process, use 127.0.0.1 with the configured port
-    # The PyShiny apps make server-side HTTP requests to fetch data
     api_base_url = f"http://127.0.0.1:{settings.server_port}"
     logger.info(f"Configuring Shiny apps with API base URL: {api_base_url}")
-    logger.info(f"Server port from settings: {settings.server_port}")
 
     try:
         heatmap_shiny_app = create_heatmap_app(api_base_url=api_base_url, fastapi_app=app)
-        logger.info(f"Heatmap app created: {type(heatmap_shiny_app)}")
-        # Try mounting the PyShiny App directly first (it's ASGI-compatible)
-        # If that doesn't work, fall back to starlette_app
-        try:
-            app.mount("/shiny/heatmap", heatmap_shiny_app, name="shiny_heatmap")
-            logger.info("PyShiny heatmap app mounted directly at /shiny/heatmap")
-        except Exception as mount_error:
-            logger.warning(f"Direct mount failed, trying starlette_app: {mount_error}")
-            starlette_app = heatmap_shiny_app.starlette_app
-            app.mount("/shiny/heatmap", starlette_app, name="shiny_heatmap")
-            logger.info("PyShiny heatmap app mounted via starlette_app at /shiny/heatmap")
+        _heatmap_asgi = getattr(heatmap_shiny_app, "starlette_app", heatmap_shiny_app)
+        app.mount("/shiny/heatmap", _heatmap_asgi, name="shiny_heatmap")
+        logger.info("PyShiny heatmap mounted at /shiny/heatmap (ASGI: starlette_app)")
     except Exception as e:
-        logger.error(f"Failed to mount PyShiny heatmap app: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Failed to mount PyShiny heatmap app")
 
     try:
         silhouette_shiny_app = create_silhouette_app(api_base_url=api_base_url, fastapi_app=app)
-        logger.info(f"Silhouette app created: {type(silhouette_shiny_app)}")
-        # Try mounting the PyShiny App directly first (it's ASGI-compatible)
-        # If that doesn't work, fall back to starlette_app
-        try:
-            app.mount("/shiny/silhouette", silhouette_shiny_app, name="shiny_silhouette")
-            logger.info("PyShiny silhouette app mounted directly at /shiny/silhouette")
-        except Exception as mount_error:
-            logger.warning(f"Direct mount failed, trying starlette_app: {mount_error}")
-            starlette_app = silhouette_shiny_app.starlette_app
-            app.mount("/shiny/silhouette", starlette_app, name="shiny_silhouette")
-            logger.info("PyShiny silhouette app mounted via starlette_app at /shiny/silhouette")
+        _silhouette_asgi = getattr(silhouette_shiny_app, "starlette_app", silhouette_shiny_app)
+        app.mount("/shiny/silhouette", _silhouette_asgi, name="shiny_silhouette")
+        logger.info("PyShiny silhouette mounted at /shiny/silhouette (ASGI: starlette_app)")
     except Exception as e:
-        logger.error(f"Failed to mount PyShiny silhouette app: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Failed to mount PyShiny silhouette app")
 else:
-    logger.warning("PyShiny is not available - visualization apps will not be mounted")
+    logger.warning("PyShiny is not available - silhouette and heatmap will return 404")
 
 # ... rest of existing code ...
 
