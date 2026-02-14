@@ -293,21 +293,34 @@ function copyLink() {
 // Make copyLink available globally
 window.copyLink = copyLink;
 
+
 /**
- * Use HTTPS for same-origin Shiny iframes when the page is HTTP (e.g. Hugging Face Spaces
- * embedding) to avoid Mixed Content blocking.
+ * Set Shiny iframe src from data-src, using HTTPS when not on localhost so embedded
+ * pages (e.g. Hugging Face Spaces) don't hit Mixed Content when parent is HTTPS.
+ * Use localhost instead of 0.0.0.0 so the browser doesn't get "invalid response".
  */
 function applyShinyIframeSrcs() {
-    const base = 'https://' + window.location.host;
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+    let base;
+    if (isLocal) {
+        base = hostname === '0.0.0.0'
+            ? (window.location.protocol + '//localhost:' + window.location.port)
+            : window.location.origin;
+    } else {
+        base = 'https://' + window.location.host;
+    }
     document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(iframe => {
         const path = iframe.getAttribute('data-src');
         if (path) iframe.src = base + path;
     });
 }
 
+// Apply Shiny iframe URLs as soon as this script runs (iframes are already in DOM)
+applyShinyIframeSrcs();
+
 // Start fetching on page load
 document.addEventListener('DOMContentLoaded', () => {
-    applyShinyIframeSrcs();
     if (typeof jobId !== 'undefined' && jobId) {
         fetchResult();
     } else {

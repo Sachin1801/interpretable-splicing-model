@@ -23,11 +23,13 @@ let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: se
 let showSequenceColumn = false;
 let currentSort = { column: 'created_at', order: 'desc' };
 
-/** Base URL for Shiny iframes (HTTPS when on HF Spaces over HTTP to avoid mixed content). */
+/** Base URL for Shiny iframes (HTTPS when not localhost; use localhost not 0.0.0.0 to avoid invalid response). */
 function getShinyBaseUrl() {
-    return (window.location.host.includes('hf.space') && window.location.protocol === 'http:')
-        ? 'https://' + window.location.host
-        : window.location.origin;
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+    if (!isLocal) return 'https://' + window.location.host;
+    if (hostname === '0.0.0.0') return window.location.protocol + '//localhost:' + window.location.port;
+    return window.location.origin;
 }
 
 // DOM Elements

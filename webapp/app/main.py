@@ -31,6 +31,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+class _InvalidHttpFilter(logging.Filter):
+    """Suppress Uvicorn 'Invalid HTTP request received' (often proxy/HTTPS/probe noise)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.msg and "Invalid HTTP request received" in str(record.msg):
+            return False
+        return True
+
+
+logging.getLogger("uvicorn.error").addFilter(_InvalidHttpFilter())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown."""

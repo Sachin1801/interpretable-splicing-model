@@ -865,6 +865,18 @@
     }
 
     // Set up iframe onload handlers
+    (function() {
+        var hostname = window.location.hostname;
+        var isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+        var base = isLocal
+            ? (hostname === '0.0.0.0' ? (window.location.protocol + '//localhost:' + window.location.port) : window.location.origin)
+            : ('https://' + window.location.host);
+        document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(function(iframe) {
+            var path = iframe.getAttribute('data-src');
+            if (path) iframe.src = base + path;
+        });
+    })();
+
     document.addEventListener('DOMContentLoaded', function() {
         const silhouetteIframe = document.getElementById('silhouette-iframe');
         const heatmapIframe = document.getElementById('heatmap-iframe');
