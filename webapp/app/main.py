@@ -14,18 +14,14 @@ from webapp.app.database import init_db, get_db
 from webapp.app.api.routes import router as api_router
 from webapp.app.models.job import Job
 
-# PyShiny imports for visualizations
+# PyShiny: only require the package; load app factories when mounting (so errors show in /api/debug/mounts)
+_shiny_import_error = None
 try:
-    from shiny import App
-    from webapp.app.shiny_apps.heatmap_app import create_app as create_heatmap_app
-    from webapp.app.shiny_apps.silhouette_app import create_app as create_silhouette_app
+    from shiny import App  # noqa: F401
     SHINY_AVAILABLE = True
 except Exception as e:
-    import traceback
     SHINY_AVAILABLE = False
-    logger = logging.getLogger(__name__)
-    logger.warning(f"PyShiny not available - visualizations will be disabled: {e}")
-    logger.warning(f"Full traceback:\n{traceback.format_exc()}")
+    _shiny_import_error = str(e)
 
 # Configure logging
 logging.basicConfig(
@@ -107,13 +103,13 @@ if static_path.exists():
 
 _shiny_mount_errors = {}
 
-# Mount PyShiny visualization apps
-# Use starlette_app for mounting so behavior is identical locally and on Hugging Face Spaces
+# Mount PyShiny visualization apps (import app factories here so failure gives a clear error in /api/debug/mounts)
 if SHINY_AVAILABLE:
     api_base_url = f"http://127.0.0.1:{settings.server_port}"
     logger.info(f"Configuring Shiny apps with API base URL: {api_base_url}")
 
     try:
+        from webapp.app.shiny_apps.heatmap_app import create_app as create_heatmap_app
         heatmap_shiny_app = create_heatmap_app(api_base_url=api_base_url, fastapi_app=app)
         _heatmap_asgi = getattr(heatmap_shiny_app, "starlette_app", heatmap_shiny_app)
         app.mount("/shiny/heatmap", _heatmap_asgi, name="shiny_heatmap")
@@ -123,6 +119,7 @@ if SHINY_AVAILABLE:
         logger.exception("Failed to mount PyShiny heatmap app")
 
     try:
+        from webapp.app.shiny_apps.silhouette_app import create_app as create_silhouette_app
         silhouette_shiny_app = create_silhouette_app(api_base_url=api_base_url, fastapi_app=app)
         _silhouette_asgi = getattr(silhouette_shiny_app, "starlette_app", silhouette_shiny_app)
         app.mount("/shiny/silhouette", _silhouette_asgi, name="shiny_silhouette")
@@ -131,7 +128,7 @@ if SHINY_AVAILABLE:
         _shiny_mount_errors["silhouette"] = str(e)
         logger.exception("Failed to mount PyShiny silhouette app")
 else:
-    _shiny_mount_errors["import"] = "PyShiny or create_app imports failed at startup"
+    _shiny_mount_errors["import"] = _shiny_import_error or "PyShiny package failed to import at startup"
     logger.warning("PyShiny is not available - silhouette and heatmap will return 404")
 
 # ... rest of existing code ...
@@ -156,6 +153,7 @@ async def debug_mounts():
         "shiny_expected": ["/shiny/heatmap", "/shiny/silhouette"],
         "shiny_available_at_startup": SHINY_AVAILABLE,
         "shiny_mount_errors": _shiny_mount_errors,
+        "shiny_import_error": _shiny_import_error,
     }
 
 
