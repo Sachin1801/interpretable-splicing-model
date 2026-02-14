@@ -133,7 +133,7 @@
                         <div id="silhouette-container" class="w-full" style="min-height: 488px;">
                             <iframe
                                 id="silhouette-iframe"
-                                src="/shiny/silhouette?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                                data-src="/shiny/silhouette?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                                 class="w-full border-0"
                                 style="height: 488px; min-height: 450px;"
                                 title="Silhouette View"
@@ -155,7 +155,7 @@
                         <div id="heatmap-container" class="w-full" style="min-height: 675px;">
                             <iframe
                                 id="heatmap-iframe"
-                                src="/shiny/heatmap?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                                data-src="/shiny/heatmap?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                                 class="w-full border-0"
                                 style="height: 675px; min-height: 638px;"
                                 title="Filter Activation Heatmap"
@@ -179,7 +179,7 @@
                 <div id="feature-silhouette-container" class="w-full" style="min-height: 488px;">
                     <iframe
                         id="feature-silhouette-iframe"
-                        src="/shiny/silhouette?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
+                        data-src="/shiny/silhouette?job_id={{ job_id }}{% if batch_index is defined and batch_index is not none %}&batch_index={{ batch_index }}{% endif %}"
                         class="w-full border-0"
                         style="height: 488px; min-height: 450px;"
                         title="Feature Silhouette View"

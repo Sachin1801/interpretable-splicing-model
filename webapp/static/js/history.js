@@ -23,6 +23,13 @@ let selectedItems = new Map();  // key: "jobId:batchIndex" or "jobId", value: se
 let showSequenceColumn = false;
 let currentSort = { column: 'created_at', order: 'desc' };
 
+/** Base URL for Shiny iframes (HTTPS when on HF Spaces over HTTP to avoid mixed content). */
+function getShinyBaseUrl() {
+    return (window.location.host.includes('hf.space') && window.location.protocol === 'http:')
+        ? 'https://' + window.location.host
+        : window.location.origin;
+}
+
 // DOM Elements
 const tokenDisplay = document.getElementById('token-display');
 const loadingState = document.getElementById('loading-state');
@@ -1275,8 +1282,9 @@ function loadPreviewIframes(seq) {
         ? `job_id=${seq.job_id}&batch_index=${seq.batch_index}`
         : `job_id=${seq.job_id}`;
 
-    silhouetteIframe.src = `/shiny/silhouette/?${baseParams}`;
-    heatmapIframe.src = `/shiny/heatmap/?${baseParams}`;
+    const base = getShinyBaseUrl();
+    silhouetteIframe.src = `${base}/shiny/silhouette/?${baseParams}`;
+    heatmapIframe.src = `${base}/shiny/heatmap/?${baseParams}`;
 
     // Set up onload handlers
     silhouetteIframe.onload = function() {
@@ -1415,10 +1423,11 @@ async function downloadSelectedViz() {
 
     const downloads = [];
 
+    const base = getShinyBaseUrl();
     if (downloadSilhouette) {
         const iframe = document.createElement('iframe');
         iframe.id = 'temp-silhouette-iframe';
-        iframe.src = `/shiny/silhouette/?${baseParams}`;
+        iframe.src = `${base}/shiny/silhouette/?${baseParams}`;
         iframe.style.cssText = 'width: 1200px; height: 600px; border: none;';
         tempContainer.appendChild(iframe);
         downloads.push({ type: 'silhouette', iframe });
@@ -1427,7 +1436,7 @@ async function downloadSelectedViz() {
     if (downloadHeatmap) {
         const iframe = document.createElement('iframe');
         iframe.id = 'temp-heatmap-iframe';
-        iframe.src = `/shiny/heatmap/?${baseParams}`;
+        iframe.src = `${base}/shiny/heatmap/?${baseParams}`;
         iframe.style.cssText = 'width: 1200px; height: 700px; border: none;';
         tempContainer.appendChild(iframe);
         downloads.push({ type: 'heatmap', iframe });

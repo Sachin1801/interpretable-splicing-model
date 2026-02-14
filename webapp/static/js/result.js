@@ -293,8 +293,23 @@ function copyLink() {
 // Make copyLink available globally
 window.copyLink = copyLink;
 
+/**
+ * Use HTTPS for same-origin Shiny iframes when the page is HTTP (e.g. Hugging Face Spaces
+ * embedding) to avoid Mixed Content blocking.
+ */
+function applyShinyIframeSrcs() {
+    const base = (window.location.host.includes('hf.space') && window.location.protocol === 'http:')
+        ? 'https://' + window.location.host
+        : window.location.origin;
+    document.querySelectorAll('iframe[data-src^="/shiny/"]').forEach(iframe => {
+        const path = iframe.getAttribute('data-src');
+        if (path) iframe.src = base + path;
+    });
+}
+
 // Start fetching on page load
 document.addEventListener('DOMContentLoaded', () => {
+    applyShinyIframeSrcs();
     if (typeof jobId !== 'undefined' && jobId) {
         fetchResult();
     } else {
