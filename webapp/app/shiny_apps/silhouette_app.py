@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from shiny import App, ui, render, reactive
 import numpy as np
 import httpx
-from shinywidgets import output_widget, render_widget
 import plotly.graph_objects as go
 
 
