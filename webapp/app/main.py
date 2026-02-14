@@ -105,6 +105,8 @@ static_path = Path(__file__).parent.parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
+_shiny_mount_errors = {}
+
 # Mount PyShiny visualization apps
 # Use starlette_app for mounting so behavior is identical locally and on Hugging Face Spaces
 if SHINY_AVAILABLE:
@@ -117,6 +119,7 @@ if SHINY_AVAILABLE:
         app.mount("/shiny/heatmap", _heatmap_asgi, name="shiny_heatmap")
         logger.info("PyShiny heatmap mounted at /shiny/heatmap (ASGI: starlette_app)")
     except Exception as e:
+        _shiny_mount_errors["heatmap"] = str(e)
         logger.exception("Failed to mount PyShiny heatmap app")
 
     try:
@@ -125,8 +128,10 @@ if SHINY_AVAILABLE:
         app.mount("/shiny/silhouette", _silhouette_asgi, name="shiny_silhouette")
         logger.info("PyShiny silhouette mounted at /shiny/silhouette (ASGI: starlette_app)")
     except Exception as e:
+        _shiny_mount_errors["silhouette"] = str(e)
         logger.exception("Failed to mount PyShiny silhouette app")
 else:
+    _shiny_mount_errors["import"] = "PyShiny or create_app imports failed at startup"
     logger.warning("PyShiny is not available - silhouette and heatmap will return 404")
 
 # ... rest of existing code ...
@@ -141,13 +146,17 @@ app.include_router(api_router, prefix="/api", tags=["api"])
 
 @app.get("/api/debug/mounts", include_in_schema=False)
 async def debug_mounts():
-   
     from starlette.routing import Mount
     mounts = []
     for r in getattr(app.router, "routes", []):
         if isinstance(r, Mount):
             mounts.append(r.path)
-    return {"mounts": mounts, "shiny_expected": ["/shiny/heatmap", "/shiny/silhouette"]}
+    return {
+        "mounts": mounts,
+        "shiny_expected": ["/shiny/heatmap", "/shiny/silhouette"],
+        "shiny_available_at_startup": SHINY_AVAILABLE,
+        "shiny_mount_errors": _shiny_mount_errors,
+    }
 
 
 # HTML page routes
