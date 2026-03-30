@@ -173,13 +173,13 @@ async def debug_mounts():
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def home(request: Request):
     """Render the landing page."""
-    return templates.TemplateResponse("landing.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "landing.html", {"settings": settings})
 
 
 @app.get("/input", response_class=HTMLResponse, include_in_schema=False)
 async def input_page(request: Request):
     """Render the input page for splicing prediction."""
-    return templates.TemplateResponse("input.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "input.html", {"settings": settings})
 
 
 @app.get("/result/{job_id}", response_class=HTMLResponse, include_in_schema=False)
@@ -195,8 +195,8 @@ async def result_page(request: Request, job_id: str):
 
     template_name = "batch_result.html" if is_batch else "result.html"
     return templates.TemplateResponse(
-        template_name,
-        {"request": request, "job_id": job_id, "settings": settings}
+        request, template_name,
+        {"job_id": job_id, "settings": settings}
     )
 
 
@@ -204,9 +204,8 @@ async def result_page(request: Request, job_id: str):
 async def batch_sequence_detail_page(request: Request, job_id: str, index: int):
     """Render the result page for a single sequence from a batch job."""
     return templates.TemplateResponse(
-        "result.html",
+        request, "result.html",
         {
-            "request": request,
             "job_id": job_id,
             "batch_index": index,
             "settings": settings,
@@ -217,7 +216,7 @@ async def batch_sequence_detail_page(request: Request, job_id: str, index: int):
 @app.get("/help", response_class=HTMLResponse, include_in_schema=False)
 async def help_page(request: Request):
     """Render the help page."""
-    return templates.TemplateResponse("help.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "help.html", {"settings": settings})
 
 
 @app.get("/tutorial", include_in_schema=False)
@@ -229,46 +228,46 @@ async def tutorial_page():
 @app.get("/methodology", response_class=HTMLResponse, include_in_schema=False)
 async def methodology_page(request: Request):
     """Render the methodology page."""
-    return templates.TemplateResponse("methodology.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "methodology.html", {"settings": settings})
 
 
 @app.get("/history", response_class=HTMLResponse, include_in_schema=False)
 async def history_page(request: Request):
     """Render the job history page."""
-    return templates.TemplateResponse("history.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "history.html", {"settings": settings})
 
 
 @app.get("/mutagenesis", response_class=HTMLResponse, include_in_schema=False)
 async def mutagenesis_page(request: Request):
     """Render the mutagenesis input page."""
-    return templates.TemplateResponse("mutagenesis.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "mutagenesis.html", {"settings": settings})
 
 
 @app.get("/mutagenesis/{job_id}", response_class=HTMLResponse, include_in_schema=False)
 async def mutagenesis_result_page(request: Request, job_id: str):
     """Render the mutagenesis result page."""
     return templates.TemplateResponse(
-        "mutagenesis_result.html",
-        {"request": request, "job_id": job_id, "settings": settings}
+        request, "mutagenesis_result.html",
+        {"job_id": job_id, "settings": settings}
     )
 
 
 @app.get("/comparative-analysis", response_class=HTMLResponse, include_in_schema=False)
 async def comparative_analysis_page(request: Request):
     """Render the comparative analysis page."""
-    return templates.TemplateResponse("comparative_analysis.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "comparative_analysis.html", {"settings": settings})
 
 
 @app.get("/publications", response_class=HTMLResponse, include_in_schema=False)
 async def publications_page(request: Request):
     """Render the publications page."""
-    return templates.TemplateResponse("publications.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "publications.html", {"settings": settings})
 
 
 @app.get("/download", response_class=HTMLResponse, include_in_schema=False)
 async def download_page(request: Request):
     """Render the download page."""
-    return templates.TemplateResponse("download.html", {"request": request, "settings": settings})
+    return templates.TemplateResponse(request, "download.html", {"settings": settings})
 
 
 if __name__ == "__main__":
